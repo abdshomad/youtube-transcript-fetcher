@@ -9,9 +9,12 @@ interface VideoGridProps {
     onGetTranscript: (video: Video) => void;
     isLoading: boolean;
     loadingTranscriptFor: string | null;
+    selectedVideoIds: Set<string>;
+    onToggleVideoSelection: (videoId: string) => void;
+    batchItemStatus: Record<string, 'pending' | 'success' | 'error'>;
 }
 
-const VideoGrid: React.FC<VideoGridProps> = ({ videos, onGetTranscript, isLoading, loadingTranscriptFor }) => {
+const VideoGrid: React.FC<VideoGridProps> = ({ videos, onGetTranscript, isLoading, loadingTranscriptFor, selectedVideoIds, onToggleVideoSelection, batchItemStatus }) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-7xl mt-8">
@@ -42,6 +45,9 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, onGetTranscript, isLoadin
                     onGetTranscript={onGetTranscript}
                     isLoading={!!loadingTranscriptFor}
                     isSelected={loadingTranscriptFor === video.id}
+                    isSelectedForBatch={selectedVideoIds.has(video.id)}
+                    onToggleSelect={onToggleVideoSelection}
+                    batchStatus={batchItemStatus[video.id]}
                 />
             ))}
         </div>

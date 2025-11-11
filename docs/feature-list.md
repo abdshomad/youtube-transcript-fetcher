@@ -1,3 +1,4 @@
+
 # Application Feature List
 
 A comprehensive list of all features implemented in the YouTube Playlist Transcript Fetcher application.
@@ -83,3 +84,8 @@ A comprehensive list of all features implemented in the YouTube Playlist Transcr
 - **Status**: Implemented
 - **Date**: 15 Nov 2025
 - **Description**: Users can generate a list of key topics and concepts from the transcript. These are displayed as clickable tags, which trigger an in-transcript search for the selected topic, allowing for quick navigation.
+
+### FL017 - Batch Transcript Generation & Download
+- **Status**: Implemented
+- **Date**: 16 Nov 2025
+- **Description**: Users can select multiple videos from a playlist and generate transcripts for all of them in a single operation. The progress for each video is displayed, and upon completion, a single .zip file containing all generated transcripts is automatically downloaded.

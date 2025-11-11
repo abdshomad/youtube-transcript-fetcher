@@ -1,3 +1,4 @@
+
 # Next Enhancements Suggestions (Phase 1)
 
 This document outlines potential future enhancements for the YouTube Playlist Transcript Fetcher application to expand its capabilities and provide more value to users.
@@ -20,9 +21,9 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 - **Description**: An "Extract Topics" feature has been added. It uses the Gemini API to analyze the transcript and extract a list of key topics, which are then displayed as clickable tags that trigger an in-transcript search for easy navigation.
 
 ### NE004 - Batch Transcript Generation
-- **Status**: Suggested
-- **Date**: 11 Nov 2025
-- **Description**: Allow users to select multiple videos from the playlist view and generate transcripts for all of them in a single batch operation. The UI would show the progress for each video, and the results would automatically populate the download history.
+- **Status**: Implemented
+- **Date**: 16 Nov 2025
+- **Description**: Users can select multiple videos from the playlist view and generate transcripts for all of them in a single batch operation. The UI shows the progress for each video, and the results automatically populate the download history.
 
 ### NE005 - User Accounts and Cloud Sync
 - **Status**: Suggested

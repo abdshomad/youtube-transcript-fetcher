@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Spinner from './ui/Spinner';
 import DownloadIcon from './icons/DownloadIcon';
@@ -33,11 +34,10 @@ interface TranscriptModalProps {
   keyTopicsError: string | null;
   onExtractKeyTopics: (transcript: string) => void;
   onGenerate: (language: string) => void;
+  supportedLanguages: string[];
 }
 
-const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Mandarin Chinese', 'Hindi', 'Portuguese'];
-
-const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, keyTopics, isLoadingKeyTopics, keyTopicsError, onExtractKeyTopics, onGenerate }) => {
+const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, keyTopics, isLoadingKeyTopics, keyTopicsError, onExtractKeyTopics, onGenerate, supportedLanguages }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -261,7 +261,7 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
                 className="bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 mb-6 w-full max-w-xs focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 aria-label="Select transcript language"
             >
-                {SUPPORTED_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                {supportedLanguages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
             </select>
             <button
                 onClick={() => onGenerate(selectedLanguage)}

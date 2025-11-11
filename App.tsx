@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import type { Video, DownloadRecord } from './types';
 import PlaylistForm from './components/PlaylistForm';
@@ -6,13 +7,16 @@ import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
 import { generateTranscript, generateSummary, extractKeyTopics } from './services/geminiService';
 import { fetchYouTubePlaylist } from './services/youtubeService';
-// import { generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
 import { toSrt, toVtt } from './utils/transcriptFormatters';
 import PlaylistHistoryMenu from './components/PlaylistHistoryMenu';
+import Spinner from './components/ui/Spinner';
+import DownloadIcon from './components/icons/DownloadIcon';
 
 
 declare var JSZip: any;
+const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Mandarin Chinese', 'Hindi', 'Portuguese'];
+
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -38,6 +42,13 @@ const App: React.FC = () => {
   const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
   const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
   const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
+
+  // State for batch generation
+  const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ processed: 0, total: 0 });
+  const [batchItemStatus, setBatchItemStatus] = useState<Record<string, 'pending' | 'success' | 'error'>>({});
+  const [batchLanguage, setBatchLanguage] = useState('English');
   
   const handleFetchPlaylist = useCallback(async () => {
     const input = playlistUrl.trim() || playlistTopicInput.trim();
@@ -48,6 +59,7 @@ const App: React.FC = () => {
     setIsLoadingPlaylist(true);
     setError(null);
     setVideos([]);
+    setSelectedVideoIds(new Set());
     
     try {
       const { playlistTitle, videos } = await fetchYouTubePlaylist(input);
@@ -130,7 +142,6 @@ const App: React.FC = () => {
     }
   }, [isLoadingKeyTopics]);
 
-
   const handleCloseModal = () => {
     setSelectedVideo(null);
     setTranscript('');
@@ -155,8 +166,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleRedownload = useCallback(async (record: DownloadRecord) => {
-    // This assumes the video is part of the currently loaded playlist.
-    // A more robust implementation might need to store video data alongside download records.
     const video = videos.find(v => v.id === record.videoId);
     if (!video && record.playlistTopic !== currentPlaylistTopic) {
         alert(`Please fetch the "${record.playlistTopic}" playlist again to re-download this transcript.`);
@@ -201,7 +210,6 @@ const App: React.FC = () => {
             downloadFile(record.fileName, content);
         }
 
-        // Update timestamp and move to top of history
         setDownloadHistory(prev => {
             const updatedRecord = { ...record, downloadedAt: new Date() };
             return [updatedRecord, ...prev.filter(r => r.id !== record.id)];
@@ -224,11 +232,107 @@ const App: React.FC = () => {
   }, [downloadHistory]);
 
   const filteredHistory = useMemo(() => {
-      if (selectedPlaylistTopic === null && downloadHistory.length > 0) { // 'All' is selected
+      if (selectedPlaylistTopic === null && downloadHistory.length > 0) {
           return downloadHistory;
       }
       return downloadHistory.filter(record => record.playlistTopic === selectedPlaylistTopic);
   }, [downloadHistory, selectedPlaylistTopic]);
+
+  // Batch selection handlers
+  const handleToggleVideoSelection = (videoId: string) => {
+    if (isBatchGenerating) return;
+    setSelectedVideoIds(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(videoId)) {
+        newSelection.delete(videoId);
+      } else {
+        newSelection.add(videoId);
+      }
+      return newSelection;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (isBatchGenerating) return;
+    if (selectedVideoIds.size === videos.length) {
+      setSelectedVideoIds(new Set());
+    } else {
+      setSelectedVideoIds(new Set(videos.map(v => v.id)));
+    }
+  };
+
+  const handleBatchGenerate = async () => {
+    if (selectedVideoIds.size === 0) return;
+
+    setIsBatchGenerating(true);
+    setBatchProgress({ processed: 0, total: selectedVideoIds.size });
+    const initialStatus: Record<string, 'pending' | 'success' | 'error'> = {};
+    selectedVideoIds.forEach(id => { initialStatus[id] = 'pending'; });
+    setBatchItemStatus(initialStatus);
+
+    const zip = new JSZip();
+    const errors: string[] = [];
+    let processedCount = 0;
+
+    const downloadFile = (filename: string, content: Blob) => {
+        const url = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    for (const videoId of selectedVideoIds) {
+      const video = videos.find(v => v.id === videoId);
+      if (!video) continue;
+
+      try {
+        const transcript = await generateTranscript(video.title, batchLanguage);
+        const safeTitle = video.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const fileName = `transcript_${safeTitle}.txt`;
+
+        zip.file(fileName, transcript);
+        
+        handleAddDownloadRecord({
+          videoId,
+          videoTitle: video.title,
+          playlistTopic: currentPlaylistTopic,
+          format: 'txt',
+          fileName,
+        });
+
+        setBatchItemStatus(prev => ({ ...prev, [videoId]: 'success' }));
+      } catch (err) {
+        errors.push(`${video.title}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setBatchItemStatus(prev => ({ ...prev, [videoId]: 'error' }));
+      }
+
+      processedCount++;
+      setBatchProgress({ processed: processedCount, total: selectedVideoIds.size });
+    }
+
+    if (Object.keys(zip.files).length > 0) {
+      const content = await zip.generateAsync({ type: 'blob' });
+      const safePlaylistTitle = currentPlaylistTopic.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'playlist';
+      downloadFile(`transcripts_${safePlaylistTitle}_${new Date().toISOString().split('T')[0]}.zip`, content);
+    }
+    
+    if (errors.length > 0) {
+      alert(`Finished with ${errors.length} error(s):\n\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...' : ''}`);
+    }
+    
+    setTimeout(() => {
+        setIsBatchGenerating(false);
+        setSelectedVideoIds(new Set());
+        setBatchItemStatus({});
+        setBatchProgress({ processed: 0, total: 0 });
+    }, 5000);
+  };
+
+  const progressPercentage = batchProgress.total > 0 ? (batchProgress.processed / batchProgress.total) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
@@ -253,11 +357,53 @@ const App: React.FC = () => {
         />
         {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
         
+        {selectedVideoIds.size > 0 && !isLoadingPlaylist && videos.length > 0 && (
+          <div className="w-full max-w-7xl mt-8 p-3 bg-gray-800 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-700">
+            {isBatchGenerating ? (
+                <div className="w-full flex items-center gap-4">
+                    <span className="font-bold text-white whitespace-nowrap">Generating... ({batchProgress.processed}/{batchProgress.total})</span>
+                    <div className="w-full bg-gray-700 rounded-full h-2.5">
+                        <div className="bg-red-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <div className="flex items-center gap-4">
+                        <span className="font-bold text-white">{selectedVideoIds.size} selected</span>
+                        <button onClick={handleSelectAll} className="text-sm text-red-400 hover:text-red-300 font-semibold">
+                            {selectedVideoIds.size === videos.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={batchLanguage}
+                            onChange={(e) => setBatchLanguage(e.target.value)}
+                            className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                            aria-label="Select batch transcript language"
+                        >
+                            {SUPPORTED_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                        </select>
+                        <button 
+                            onClick={handleBatchGenerate}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
+                        >
+                            <DownloadIcon className="w-5 h-5" />
+                            Generate & Download All (.zip)
+                        </button>
+                    </div>
+                </>
+            )}
+          </div>
+        )}
+        
         <VideoGrid
           videos={videos}
           onGetTranscript={handleOpenTranscriptModal}
-          isLoading={isLoadingPlaylist}
+          isLoading={isLoadingPlaylist || isBatchGenerating}
           loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
+          selectedVideoIds={selectedVideoIds}
+          onToggleVideoSelection={handleToggleVideoSelection}
+          batchItemStatus={batchItemStatus}
         />
         
         {downloadHistory.length > 0 && (
@@ -301,6 +447,7 @@ const App: React.FC = () => {
           keyTopicsError={keyTopicsError}
           onExtractKeyTopics={handleExtractKeyTopics}
           onGenerate={handleGenerateTranscript}
+          supportedLanguages={SUPPORTED_LANGUAGES}
         />
       )}
     </div>
