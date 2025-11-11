@@ -10,9 +10,9 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 - **Description**: The Gemini-powered simulation of the YouTube API has been replaced with a direct integration to the official YouTube Data API v3. The app now fetches live, real-world playlist data for both URL and topic-based inputs, making it a practical tool.
 
 ### NE002 - AI-Powered Transcript Summarization
-- **Status**: Suggested
-- **Date**: 11 Nov 2025
-- **Description**: Add a "Summarize" feature within the transcript modal. This would use the Gemini API to generate a concise, bullet-point summary of the full transcript, allowing users to grasp the key points of a video quickly.
+- **Status**: Implemented
+- **Date**: 13 Nov 2025
+- **Description**: A "Summarize" feature has been added to the transcript modal. It uses the Gemini API to generate a concise, bullet-point summary of the full transcript, allowing users to grasp the key points of a video quickly.
 
 ### NE003 - Key Topics & Concepts Extraction
 - **Status**: Suggested

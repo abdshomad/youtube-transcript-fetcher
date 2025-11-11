@@ -4,7 +4,7 @@ import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
-import { generateTranscript } from './services/geminiService';
+import { generateTranscript, generateSummary } from './services/geminiService';
 import { fetchYouTubePlaylist } from './services/youtubeService';
 // import { generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
@@ -25,6 +25,10 @@ const App: React.FC = () => {
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
   
+  const [summary, setSummary] = useState('');
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
   const [currentPlaylistTopic, setCurrentPlaylistTopic] = useState<string>('');
   const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
   const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
@@ -73,11 +77,33 @@ const App: React.FC = () => {
       setIsLoadingTranscript(false);
     }
   }, [isLoadingTranscript]);
+  
+  const handleGetSummary = useCallback(async (transcriptToSummarize: string) => {
+    if (isLoadingSummary || !transcriptToSummarize) return;
+    
+    setIsLoadingSummary(true);
+    setSummary('');
+    setSummaryError(null);
+
+    try {
+        const fetchedSummary = await generateSummary(transcriptToSummarize);
+        setSummary(fetchedSummary);
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        setSummaryError(errorMessage);
+        console.error(err);
+    } finally {
+        setIsLoadingSummary(false);
+    }
+  }, [isLoadingSummary]);
+
 
   const handleCloseModal = () => {
     setSelectedVideo(null);
     setTranscript('');
     setTranscriptError(null);
+    setSummary('');
+    setSummaryError(null);
   };
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
@@ -229,6 +255,10 @@ const App: React.FC = () => {
           playlistTopic={currentPlaylistTopic}
           onDownload={handleAddDownloadRecord}
           error={transcriptError}
+          summary={summary}
+          isLoadingSummary={isLoadingSummary}
+          summaryError={summaryError}
+          onGetSummary={handleGetSummary}
         />
       )}
     </div>

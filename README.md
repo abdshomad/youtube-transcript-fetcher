@@ -6,6 +6,7 @@ An application that uses the official **YouTube Data API** to fetch real video p
 
 - **Real Playlist Fetching**: Enter a YouTube playlist URL or any topic (e.g., "Beginner Python"), and the app will use the YouTube Data API to fetch the real list of videos.
 - **AI-Powered Transcripts**: Select any video from the generated playlist to get a plausible, AI-generated transcript.
+- **AI-Powered Summarization**: Generate a concise, bullet-point summary for any transcript with a single click.
 - **Responsive UI**: A clean, modern interface built with Tailwind CSS that works seamlessly on desktop and mobile devices.
 - **Interactive Modals**: Transcripts are displayed in an easy-to-read, accessible modal.
 - **Loading & Error States**: Smooth user experience with clear loading indicators and graceful error handling.

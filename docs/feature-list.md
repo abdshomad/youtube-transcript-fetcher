@@ -68,3 +68,8 @@ A comprehensive list of all features implemented in the YouTube Playlist Transcr
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: The UI provides clear visual feedback during data fetching (skeletons, spinners) and displays user-friendly messages for API errors or other issues.
+
+### FL014 - AI-Powered Transcript Summarization
+- **Status**: Implemented
+- **Date**: 13 Nov 2025
+- **Description**: Users can click a "Summarize" button within the transcript modal to generate a concise, bullet-point summary of the full transcript using the Gemini API. The summary is displayed directly above the transcript content.
