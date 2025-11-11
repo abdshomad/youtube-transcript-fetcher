@@ -4,18 +4,22 @@ import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
-import { generatePlaylistData, generateTranscript } from './services/geminiService';
+import { generatePlaylistData, generateTranscript, generatePlaylistPreview } from './services/geminiService';
 // import { generatePlaylistData, generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
 import { toSrt, toVtt } from './utils/transcriptFormatters';
 import PlaylistHistoryMenu from './components/PlaylistHistoryMenu';
+import PlaylistPreview from './components/PlaylistPreview';
+import Spinner from './components/ui/Spinner';
 
 declare var JSZip: any;
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
+  const [playlistPreview, setPlaylistPreview] = useState<string[] | null>(null);
   const [isLoadingPlaylist, setIsLoadingPlaylist] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -28,23 +32,40 @@ const App: React.FC = () => {
   const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
   const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
   
-  const handleFetchPlaylist = useCallback(async () => {
-    setIsLoadingPlaylist(true);
+  const handleGeneratePreview = useCallback(async () => {
+    setIsLoadingPreview(true);
     setError(null);
     setVideos([]);
+    setPlaylistPreview(null);
     try {
       const topic = playlistUrl.trim() || 'React development tutorials';
       setCurrentPlaylistTopic(topic);
-      const fetchedVideos = await generatePlaylistData(topic);
-      setVideos(fetchedVideos);
+      const fetchedTitles = await generatePlaylistPreview(topic);
+      setPlaylistPreview(fetchedTitles);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      setError(`Failed to fetch playlist: ${errorMessage} Please try again.`);
+      setError(`Failed to fetch playlist preview: ${errorMessage} Please try again.`);
       console.error(err);
     } finally {
-      setIsLoadingPlaylist(false);
+      setIsLoadingPreview(false);
     }
   }, [playlistUrl]);
+
+  const handleGenerateFullPlaylist = useCallback(async () => {
+    setIsLoadingPlaylist(true);
+    setError(null);
+    setPlaylistPreview(null);
+    try {
+        const fetchedVideos = await generatePlaylistData(currentPlaylistTopic);
+        setVideos(fetchedVideos);
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        setError(`Failed to fetch playlist: ${errorMessage} Please try again.`);
+        console.error(err);
+    } finally {
+        setIsLoadingPlaylist(false);
+    }
+  }, [currentPlaylistTopic]);
   
   const handleGetTranscript = useCallback(async (video: Video) => {
     if (isLoadingTranscript) return;
@@ -177,17 +198,31 @@ const App: React.FC = () => {
         <PlaylistForm 
           url={playlistUrl}
           setUrl={setPlaylistUrl}
-          onSubmit={handleFetchPlaylist}
-          isLoading={isLoadingPlaylist}
+          onSubmit={handleGeneratePreview}
+          isLoading={isLoadingPreview}
         />
         {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
 
-        <VideoGrid
-          videos={videos}
-          onGetTranscript={handleGetTranscript}
-          isLoading={isLoadingPlaylist}
-          loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
-        />
+        {isLoadingPreview && <div className="flex justify-center items-center mt-8"><Spinner className="w-10 h-10 text-red-500"/></div>}
+
+        {playlistPreview && !isLoadingPreview && (
+          <PlaylistPreview
+            topic={currentPlaylistTopic}
+            titles={playlistPreview}
+            onConfirm={handleGenerateFullPlaylist}
+            onCancel={() => setPlaylistPreview(null)}
+            isLoading={isLoadingPlaylist}
+          />
+        )}
+        
+        {!playlistPreview && (
+           <VideoGrid
+            videos={videos}
+            onGetTranscript={handleGetTranscript}
+            isLoading={isLoadingPlaylist}
+            loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
+          />
+        )}
         
         {downloadHistory.length > 0 && (
           <div className="w-full max-w-7xl mt-12 grid grid-cols-1 md:grid-cols-4 gap-8">

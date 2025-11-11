@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from '@google/genai';
 import type { Video } from '../types';
 
@@ -22,6 +21,42 @@ const PLAYLIST_SCHEMA = {
     },
   },
   required: ['videos'],
+};
+
+const PREVIEW_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    titles: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.STRING,
+        description: 'The title of a potential YouTube video',
+      },
+    },
+  },
+  required: ['titles'],
+};
+
+export const generatePlaylistPreview = async (playlistTopic: string): Promise<string[]> => {
+  const prompt = `Generate a list of 8 realistic YouTube video titles for a playlist about "${playlistTopic}".`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: PREVIEW_SCHEMA,
+      },
+    });
+    
+    const jsonText = response.text.trim();
+    const parsed = JSON.parse(jsonText);
+    return parsed.titles || [];
+  } catch (error) {
+    console.error("Error generating playlist preview:", error);
+    throw new Error("Failed to generate playlist preview from the API.");
+  }
 };
 
 

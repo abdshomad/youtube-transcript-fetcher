@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Spinner from './ui/Spinner';
 
@@ -30,7 +29,7 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ url, setUrl, onSubmit, isLo
                 disabled={isLoading}
                 className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
             >
-                {isLoading ? <Spinner /> : 'Fetch Playlist'}
+                {isLoading ? <Spinner /> : 'Preview Playlist'}
             </button>
         </form>
     );
