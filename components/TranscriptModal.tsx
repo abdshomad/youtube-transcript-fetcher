@@ -10,10 +10,11 @@ interface TranscriptModalProps {
   transcript: string;
   isLoading: boolean;
   onClose: () => void;
+  onDownload: (record: { videoTitle: string; format: 'txt' | 'srt' | 'vtt' | 'all'; fileName: string; }) => void;
   error: string | null;
 }
 
-const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcript, isLoading, onClose, error }) => {
+const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcript, isLoading, onClose, onDownload, error }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -68,13 +69,19 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcrip
 
     try {
       if (format === 'txt') {
-        downloadFile(`transcript_${safeTitle}.txt`, transcript);
+        const fileName = `transcript_${safeTitle}.txt`;
+        downloadFile(fileName, transcript);
+        onDownload({ videoTitle, format: 'txt', fileName });
       } else if (format === 'srt') {
         const srtContent = toSrt(transcript);
-        downloadFile(`transcript_${safeTitle}.srt`, srtContent);
+        const fileName = `transcript_${safeTitle}.srt`;
+        downloadFile(fileName, srtContent);
+        onDownload({ videoTitle, format: 'srt', fileName });
       } else if (format === 'vtt') {
         const vttContent = toVtt(transcript);
-        downloadFile(`transcript_${safeTitle}.vtt`, vttContent);
+        const fileName = `transcript_${safeTitle}.vtt`;
+        downloadFile(fileName, vttContent);
+        onDownload({ videoTitle, format: 'vtt', fileName });
       } else if (format === 'all') {
         const zip = new JSZip();
         zip.file(`transcript_${safeTitle}.txt`, transcript);
@@ -82,7 +89,9 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcrip
         zip.file(`transcript_${safeTitle}.vtt`, toVtt(transcript));
 
         const content = await zip.generateAsync({ type: 'blob' });
-        downloadFile(`transcripts_${safeTitle}.zip`, content);
+        const fileName = `transcripts_${safeTitle}.zip`;
+        downloadFile(fileName, content);
+        onDownload({ videoTitle, format: 'all', fileName });
       }
     } catch (err) {
       console.error(`Error creating download for format ${format}:`, err);

@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import type { Video } from './types';
+import type { Video, DownloadRecord } from './types';
 import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
 // import { generatePlaylistData, generateTranscript } from './services/geminiService';
 import { generatePlaylistData, generateTranscript } from './services/mockApiService';
+import DownloadHistory from './components/DownloadHistory';
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -17,6 +18,8 @@ const App: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
+
+  const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
   
   const handleFetchPlaylist = useCallback(async () => {
     setIsLoadingPlaylist(true);
@@ -60,6 +63,13 @@ const App: React.FC = () => {
     setTranscript('');
     setTranscriptError(null);
   };
+  
+  const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
+    setDownloadHistory(prev => [
+      { ...record, id: Date.now().toString(), downloadedAt: new Date() },
+      ...prev
+    ]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
@@ -88,6 +98,8 @@ const App: React.FC = () => {
           isLoading={isLoadingPlaylist}
           loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
         />
+        
+        <DownloadHistory history={downloadHistory} />
       </main>
 
       {selectedVideo && (
@@ -96,6 +108,7 @@ const App: React.FC = () => {
           transcript={transcript}
           isLoading={isLoadingTranscript}
           onClose={handleCloseModal}
+          onDownload={handleAddDownloadRecord}
           error={transcriptError}
         />
       )}

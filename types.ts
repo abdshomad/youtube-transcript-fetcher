@@ -5,3 +5,11 @@ export interface Video {
   thumbnailUrl: string;
   channelName: string;
 }
+
+export interface DownloadRecord {
+  id: string;
+  videoTitle: string;
+  format: 'txt' | 'srt' | 'vtt' | 'all';
+  fileName: string;
+  downloadedAt: Date;
+}
