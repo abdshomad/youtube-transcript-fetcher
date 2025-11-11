@@ -60,16 +60,22 @@ const App: React.FC = () => {
   }, [playlistUrl, playlistTopicInput]);
 
   
-  const handleGetTranscript = useCallback(async (video: Video) => {
-    if (isLoadingTranscript) return;
-
+  const handleOpenTranscriptModal = useCallback((video: Video) => {
     setSelectedVideo(video);
-    setIsLoadingTranscript(true);
     setTranscript('');
+    setTranscriptError(null);
+    setSummary('');
+    setSummaryError(null);
+  }, []);
+
+  const handleGenerateTranscript = useCallback(async (language: string) => {
+    if (isLoadingTranscript || !selectedVideo) return;
+
+    setIsLoadingTranscript(true);
     setTranscriptError(null);
 
     try {
-      const fetchedTranscript = await generateTranscript(video.title);
+      const fetchedTranscript = await generateTranscript(selectedVideo.title, language);
       setTranscript(fetchedTranscript);
     } catch (err) {
        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -78,7 +84,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoadingTranscript(false);
     }
-  }, [isLoadingTranscript]);
+  }, [isLoadingTranscript, selectedVideo]);
   
   const handleGetSummary = useCallback(async (transcriptToSummarize: string) => {
     if (isLoadingSummary || !transcriptToSummarize) return;
@@ -222,7 +228,7 @@ const App: React.FC = () => {
         
         <VideoGrid
           videos={videos}
-          onGetTranscript={handleGetTranscript}
+          onGetTranscript={handleOpenTranscriptModal}
           isLoading={isLoadingPlaylist}
           loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
         />
@@ -263,6 +269,7 @@ const App: React.FC = () => {
           isLoadingSummary={isLoadingSummary}
           summaryError={summaryError}
           onGetSummary={handleGetSummary}
+          onGenerate={handleGenerateTranscript}
         />
       )}
     </div>

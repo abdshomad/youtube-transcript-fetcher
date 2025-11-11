@@ -2,8 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const generateTranscript = async (videoTitle: string): Promise<string> => {
-    const prompt = `Generate a plausible, paragraph-based English transcript for a YouTube video titled "${videoTitle}". Make it about 250 words long and realistic for a tutorial or informational video. Format it into several paragraphs separated by double newlines for readability.`;
+export const generateTranscript = async (videoTitle: string, language: string = 'English'): Promise<string> => {
+    const prompt = `Generate a plausible, paragraph-based transcript in ${language} for a YouTube video titled "${videoTitle}". Make it about 250 words long and realistic for a tutorial or informational video. Format it into several paragraphs separated by double newlines for readability.`;
 
     try {
         const response = await ai.models.generateContent({

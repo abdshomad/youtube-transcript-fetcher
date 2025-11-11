@@ -9,6 +9,7 @@ import XIcon from './icons/XIcon';
 import EditIcon from './icons/EditIcon';
 import SaveIcon from './icons/SaveIcon';
 import SparklesIcon from './icons/SparklesIcon';
+import LanguageIcon from './icons/LanguageIcon';
 
 
 declare var JSZip: any;
@@ -26,12 +27,16 @@ interface TranscriptModalProps {
   isLoadingSummary: boolean;
   summaryError: string | null;
   onGetSummary: (transcript: string) => void;
+  onGenerate: (language: string) => void;
 }
 
-const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary }) => {
+const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Mandarin Chinese', 'Hindi', 'Portuguese'];
+
+const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, onGenerate }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<{ start: number; end: number }[]>([]);
@@ -221,6 +226,92 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
     return <>{parts}</>;
   };
 
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <Spinner className="w-10 h-10 text-red-500" />
+          <p className="mt-4 text-gray-300">Generating transcript...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <p className="text-red-400">{error}</p>
+        </div>
+      );
+    }
+
+    if (!transcript) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+            <LanguageIcon className="w-16 h-16 text-red-500 mb-4" />
+            <h3 className="text-xl font-bold mb-2">Select Transcript Language</h3>
+            <p className="text-gray-400 mb-6 max-w-sm">Choose the language for the transcript you want to generate.</p>
+            <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 mb-6 w-full max-w-xs focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                aria-label="Select transcript language"
+            >
+                {SUPPORTED_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+            </select>
+            <button
+                onClick={() => onGenerate(selectedLanguage)}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+                Generate Transcript
+            </button>
+        </div>
+      );
+    }
+    
+    return (
+       <>
+          {(isLoadingSummary || summaryError || summary) && (
+              <div className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                  <h3 className="font-bold text-md mb-2 text-gray-200 flex items-center gap-2">
+                      <SparklesIcon className="w-5 h-5 text-purple-400" />
+                      AI Summary
+                  </h3>
+                  {isLoadingSummary && (
+                      <div className="flex items-center gap-2 text-gray-400">
+                          <Spinner className="w-4 h-4" />
+                          <span>Generating summary...</span>
+                      </div>
+                  )}
+                  {summaryError && !isLoadingSummary && (
+                      <p className="text-red-400">{summaryError}</p>
+                  )}
+                  {summary && !isLoadingSummary && (
+                      <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap">
+                        {summary.split('\n').map((line, i) => (
+                            <p key={i} className="my-1 leading-relaxed">{line.replace(/^\s*-\s*/, '• ')}</p>
+                        ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {isEditing ? (
+            <textarea
+              value={editedTranscript}
+              onChange={(e) => setEditedTranscript(e.target.value)}
+              className="w-full h-full bg-gray-900 text-gray-300 rounded-md p-2 outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              style={{ minHeight: '40vh' }}
+              aria-label="Transcript editor"
+            />
+          ) : (
+              <div className="prose prose-invert max-w-none whitespace-pre-wrap text-gray-300">
+                  {renderHighlightedTranscript()}
+              </div>
+          )}
+        </>
+    );
+  };
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
@@ -233,172 +324,122 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
           <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none font-bold">&times;</button>
         </header>
         <main className="p-6 overflow-y-auto flex-grow">
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center h-full">
-              <Spinner className="w-10 h-10 text-red-500" />
-              <p className="mt-4 text-gray-300">Generating transcript...</p>
-            </div>
-          )}
-          {error && !isLoading && (
-             <div className="flex flex-col items-center justify-center h-full text-center">
-              <p className="text-red-400">{error}</p>
-            </div>
-          )}
-          {!isLoading && !error && (
-            <>
-              {(isLoadingSummary || summaryError || summary) && (
-                  <div className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
-                      <h3 className="font-bold text-md mb-2 text-gray-200 flex items-center gap-2">
-                          <SparklesIcon className="w-5 h-5 text-purple-400" />
-                          AI Summary
-                      </h3>
-                      {isLoadingSummary && (
-                          <div className="flex items-center gap-2 text-gray-400">
-                              <Spinner className="w-4 h-4" />
-                              <span>Generating summary...</span>
-                          </div>
-                      )}
-                      {summaryError && !isLoadingSummary && (
-                          <p className="text-red-400">{summaryError}</p>
-                      )}
-                      {summary && !isLoadingSummary && (
-                          <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap">
-                            {summary.split('\n').map((line, i) => (
-                                <p key={i} className="my-1 leading-relaxed">{line.replace(/^\s*-\s*/, '• ')}</p>
-                            ))}
-                          </div>
-                      )}
-                  </div>
-              )}
-
-              {isEditing ? (
-                <textarea
-                  value={editedTranscript}
-                  onChange={(e) => setEditedTranscript(e.target.value)}
-                  className="w-full h-full bg-gray-900 text-gray-300 rounded-md p-2 outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                  style={{ minHeight: '40vh' }}
-                  aria-label="Transcript editor"
-                />
-              ) : (
-                  <div className="prose prose-invert max-w-none whitespace-pre-wrap text-gray-300">
-                      {renderHighlightedTranscript()}
-                  </div>
-              )}
-            </>
-          )}
+          {renderContent()}
         </main>
-        <footer className="p-4 border-t border-gray-700 flex justify-between items-center gap-4 flex-wrap">
-            <div className="flex-grow max-w-sm">
-                {!isEditing && (
-                    <div className="flex items-center gap-2 bg-gray-700 rounded-lg px-2 w-full">
-                        <SearchIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="Search transcript..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            onKeyDown={handleSearchKeyDown}
-                            className="bg-transparent text-white outline-none py-2 w-full text-sm"
-                        />
-                        {searchQuery && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                                <span className="text-gray-400 text-sm whitespace-nowrap">
-                                    {matches.length > 0 ? `${currentMatchIndex + 1} of ${matches.length}` : '0 of 0'}
-                                </span>
-                                <button onClick={handlePrevMatch} disabled={matches.length === 0} className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed">
-                                    <ChevronUpIcon className="w-5 h-5" />
-                                </button>
-                                <button onClick={handleNextMatch} disabled={matches.length === 0} className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed">
-                                    <ChevronDownIcon className="w-5 h-5" />
-                                </button>
-                                <button onClick={() => setSearchQuery('')} className="p-1 text-gray-400 hover:text-white">
-                                    <XIcon className="w-5 h-5" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-          
-            <div className="flex items-center gap-2 flex-shrink-0">
-                {isEditing ? (
-                    <>
-                        <button onClick={handleCancel} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
-                        <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
-                            <SaveIcon className="w-5 h-5" />
-                            Save
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        <button onClick={() => setIsEditing(true)} disabled={isLoading || !!error || !currentTranscript} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
-                            <EditIcon className="w-5 h-5" />
-                            Edit
-                        </button>
-                         <button 
-                            onClick={() => onGetSummary(currentTranscript)} 
-                            disabled={isLoading || !!error || !currentTranscript || isLoadingSummary || !!summary}
-                            className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
-                            {isLoadingSummary ? <Spinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                            {summary ? 'Summarized' : 'Summarize'}
-                        </button>
-                        <div className="relative" ref={dropdownRef}>
-                            <button
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            disabled={isLoading || !!error || !currentTranscript}
-                            className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-                            aria-haspopup="true"
-                            aria-expanded={isDropdownOpen}
-                            >
-                            <DownloadIcon className="w-5 h-5" />
-                            Download
-                            <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
-
-                            {isDropdownOpen && (
-                            <div className="origin-top-right absolute right-0 bottom-full mb-2 w-56 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5 z-10">
-                                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                                <a
-                                    href="#"
-                                    onClick={(e) => { e.preventDefault(); handleDownload('txt'); }}
-                                    className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
-                                    role="menuitem"
-                                >
-                                    Download as .txt
-                                </a>
-                                <a
-                                    href="#"
-                                    onClick={(e) => { e.preventDefault(); handleDownload('srt'); }}
-                                    className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
-                                    role="menuitem"
-                                >
-                                    Download as .srt
-                                </a>
-                                <a
-                                    href="#"
-                                    onClick={(e) => { e.preventDefault(); handleDownload('vtt'); }}
-                                    className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
-                                    role="menuitem"
-                                >
-                                    Download as .vtt
-                                </a>
-                                <div className="border-t border-gray-600 my-1"></div>
-                                <a
-                                    href="#"
-                                    onClick={(e) => { e.preventDefault(); handleDownload('all'); }}
-                                    className="block px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-600"
-                                    role="menuitem"
-                                >
-                                    Download All (.zip)
-                                </a>
+        {transcript && (
+            <footer className="p-4 border-t border-gray-700 flex justify-between items-center gap-4 flex-wrap">
+                <div className="flex-grow max-w-sm">
+                    {!isEditing && (
+                        <div className="flex items-center gap-2 bg-gray-700 rounded-lg px-2 w-full">
+                            <SearchIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Search transcript..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                onKeyDown={handleSearchKeyDown}
+                                className="bg-transparent text-white outline-none py-2 w-full text-sm"
+                            />
+                            {searchQuery && (
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    <span className="text-gray-400 text-sm whitespace-nowrap">
+                                        {matches.length > 0 ? `${currentMatchIndex + 1} of ${matches.length}` : '0 of 0'}
+                                    </span>
+                                    <button onClick={handlePrevMatch} disabled={matches.length === 0} className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed">
+                                        <ChevronUpIcon className="w-5 h-5" />
+                                    </button>
+                                    <button onClick={handleNextMatch} disabled={matches.length === 0} className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed">
+                                        <ChevronDownIcon className="w-5 h-5" />
+                                    </button>
+                                    <button onClick={() => setSearchQuery('')} className="p-1 text-gray-400 hover:text-white">
+                                        <XIcon className="w-5 h-5" />
+                                    </button>
                                 </div>
-                            </div>
                             )}
                         </div>
-                    </>
-                )}
-            </div>
-        </footer>
+                    )}
+                </div>
+              
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    {isEditing ? (
+                        <>
+                            <button onClick={handleCancel} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                            <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+                                <SaveIcon className="w-5 h-5" />
+                                Save
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setIsEditing(true)} disabled={isLoading || !!error || !currentTranscript} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+                                <EditIcon className="w-5 h-5" />
+                                Edit
+                            </button>
+                             <button 
+                                onClick={() => onGetSummary(currentTranscript)} 
+                                disabled={isLoading || !!error || !currentTranscript || isLoadingSummary || !!summary}
+                                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+                                {isLoadingSummary ? <Spinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
+                                {summary ? 'Summarized' : 'Summarize'}
+                            </button>
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                disabled={isLoading || !!error || !currentTranscript}
+                                className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                                aria-haspopup="true"
+                                aria-expanded={isDropdownOpen}
+                                >
+                                <DownloadIcon className="w-5 h-5" />
+                                Download
+                                <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+
+                                {isDropdownOpen && (
+                                <div className="origin-top-right absolute right-0 bottom-full mb-2 w-56 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5 z-10">
+                                    <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                    <a
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleDownload('txt'); }}
+                                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
+                                        role="menuitem"
+                                    >
+                                        Download as .txt
+                                    </a>
+                                    <a
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleDownload('srt'); }}
+                                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
+                                        role="menuitem"
+                                    >
+                                        Download as .srt
+                                    </a>
+                                    <a
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleDownload('vtt'); }}
+                                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
+                                        role="menuitem"
+                                    >
+                                        Download as .vtt
+                                    </a>
+                                    <div className="border-t border-gray-600 my-1"></div>
+                                    <a
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleDownload('all'); }}
+                                        className="block px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-600"
+                                        role="menuitem"
+                                    >
+                                        Download All (.zip)
+                                    </a>
+                                    </div>
+                                </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </footer>
+        )}
       </div>
        <style>{`
         @keyframes scale-in {

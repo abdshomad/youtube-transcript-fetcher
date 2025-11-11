@@ -6,6 +6,7 @@ An application that uses the official **YouTube Data API** to fetch real video p
 
 - **Real Playlist Fetching**: Enter a YouTube playlist URL or any topic (e.g., "Beginner Python"), and the app will use the YouTube Data API to fetch the real list of videos.
 - **AI-Powered Transcripts**: Select any video from the generated playlist to get a plausible, AI-generated transcript.
+- **Multi-Language Support**: Generate transcripts in various languages, including Spanish, French, German, and more.
 - **AI-Powered Summarization**: Generate a concise, bullet-point summary for any transcript with a single click.
 - **Responsive UI**: A clean, modern interface built with Tailwind CSS that works seamlessly on desktop and mobile devices.
 - **Interactive Modals**: Transcripts are displayed in an easy-to-read, accessible modal.
@@ -43,5 +44,6 @@ import { generateTranscript } from './services/mockApiService';
 2.  Click the **"Fetch Playlist"** button.
 3.  Wait for the playlist to be fetched and displayed.
 4.  Click the **"Get Transcript"** button on any video card.
-5.  A modal will appear, showing the AI-generated transcript for the selected video.
-6.  Click the '×' button, press the `Escape` key, or click outside the modal to close it.
+5.  A modal will appear, prompting you to select a language.
+6.  Choose a language and click "Generate" to get the AI-generated transcript.
+7.  Click the '×' button, press the `Escape` key, or click outside the modal to close it.
