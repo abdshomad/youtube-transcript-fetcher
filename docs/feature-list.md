@@ -89,3 +89,8 @@ A comprehensive list of all features implemented in the YouTube Playlist Transcr
 - **Status**: Implemented
 - **Date**: 16 Nov 2025
 - **Description**: Users can select multiple videos from a playlist and generate transcripts for all of them in a single operation. The progress for each video is displayed, and upon completion, a single .zip file containing all generated transcripts is automatically downloaded.
+
+### FL018 - User Accounts & Cloud Sync (Simulated)
+- **Status**: Implemented
+- **Date**: 17 Nov 2025
+- **Description**: The application features a simulated user login system. "Logging in" with a username persists download history and any transcript edits to the browser's local storage. This allows users to retain their data across different sessions and simulates a multi-user cloud sync experience.

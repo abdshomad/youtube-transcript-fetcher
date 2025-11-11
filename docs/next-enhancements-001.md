@@ -26,9 +26,9 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 - **Description**: Users can select multiple videos from the playlist view and generate transcripts for all of them in a single batch operation. The UI shows the progress for each video, and the results automatically populate the download history.
 
 ### NE005 - User Accounts and Cloud Sync
-- **Status**: Suggested
-- **Date**: 11 Nov 2025
-- **Description**: Implement a simple user authentication system. This would enable the synchronization of download history and edited transcripts across multiple devices, moving beyond browser-based local storage.
+- **Status**: Implemented
+- **Date**: 17 Nov 2025
+- **Description**: Implemented a simple user authentication system (mocked). This enables the synchronization of download history and edited transcripts across multiple browser sessions, moving beyond single-session state. User data is stored in local storage, keyed by username.
 
 ### NE006 - Multi-Language Transcript Support
 - **Status**: Implemented

@@ -12,11 +12,17 @@ import { toSrt, toVtt } from './utils/transcriptFormatters';
 import PlaylistHistoryMenu from './components/PlaylistHistoryMenu';
 import Spinner from './components/ui/Spinner';
 import DownloadIcon from './components/icons/DownloadIcon';
+import AuthModal from './components/AuthModal';
+import UserIcon from './components/icons/UserIcon';
 
 
 declare var JSZip: any;
 const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Mandarin Chinese', 'Hindi', 'Portuguese'];
 
+interface UserData {
+  downloadHistory: DownloadRecord[];
+  editedTranscripts: Record<string, string>; // videoId -> transcript
+}
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -39,9 +45,15 @@ const App: React.FC = () => {
   const [keyTopicsError, setKeyTopicsError] = useState<string | null>(null);
 
   const [currentPlaylistTopic, setCurrentPlaylistTopic] = useState<string>('');
-  const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
   const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
   const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
+
+  // User Auth & Data State
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [userData, setUserData] = useState<UserData>({ downloadHistory: [], editedTranscripts: {} });
+  
+  const downloadHistory = userData.downloadHistory;
 
   // State for batch generation
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
@@ -49,7 +61,51 @@ const App: React.FC = () => {
   const [batchProgress, setBatchProgress] = useState({ processed: 0, total: 0 });
   const [batchItemStatus, setBatchItemStatus] = useState<Record<string, 'pending' | 'success' | 'error'>>({});
   const [batchLanguage, setBatchLanguage] = useState('English');
-  
+
+  const saveUserData = useCallback((data: UserData, username: string) => {
+    if (!username) return;
+    try {
+        localStorage.setItem(`userData_${username}`, JSON.stringify(data));
+    } catch (err) {
+        console.error("Failed to save user data:", err);
+    }
+  }, []);
+
+  const handleLogin = useCallback((username: string) => {
+    const storedData = localStorage.getItem(`userData_${username}`);
+    if (storedData) {
+        try {
+            const parsedData: UserData = JSON.parse(storedData);
+            setUserData(parsedData);
+        } catch (error) {
+            console.error("Failed to parse user data:", error);
+            setUserData({ downloadHistory: [], editedTranscripts: {} });
+        }
+    } else {
+        setUserData({ downloadHistory: [], editedTranscripts: {} });
+    }
+    setCurrentUser(username);
+    setIsAuthModalOpen(false);
+    
+    // Reset view for new user session
+    setVideos([]);
+    setPlaylistUrl('');
+    setPlaylistTopicInput('');
+    setError(null);
+    setSelectedPlaylistTopic(null);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+      setCurrentUser(null);
+      setUserData({ downloadHistory: [], editedTranscripts: {} });
+      // Clear current playlist and state
+      setVideos([]);
+      setPlaylistUrl('');
+      setPlaylistTopicInput('');
+      setError(null);
+      setSelectedPlaylistTopic(null);
+  }, []);
+
   const handleFetchPlaylist = useCallback(async () => {
     const input = playlistUrl.trim() || playlistTopicInput.trim();
     if (!input) {
@@ -153,17 +209,39 @@ const App: React.FC = () => {
   };
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
-     setDownloadHistory(prev => {
-      const newRecord: DownloadRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
-      
-      // Select the playlist of the newly downloaded item
-      setSelectedPlaylistTopic(newRecord.playlistTopic);
+      const updateState = (prev: UserData): UserData => {
+        const newRecord: DownloadRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
+        setSelectedPlaylistTopic(newRecord.playlistTopic);
+        const otherRecords = prev.downloadHistory.filter(r => !(r.videoId === record.videoId && r.format === record.format));
+        return { ...prev, downloadHistory: [newRecord, ...otherRecords] };
+      };
 
-      // Filter out any previous download for the same video and format to avoid duplicates
-      const otherRecords = prev.filter(r => !(r.videoId === record.videoId && r.format === record.format));
-      return [newRecord, ...otherRecords];
-    });
-  }, []);
+      if (currentUser) {
+        setUserData(prev => {
+          const newUserData = updateState(prev);
+          saveUserData(newUserData, currentUser);
+          return newUserData;
+        });
+      } else {
+        setUserData(updateState);
+      }
+  }, [currentUser, saveUserData]);
+
+   const handleSaveEditedTranscript = useCallback((videoId: string, newTranscript: string) => {
+      if (!currentUser) return; // Only logged in users can save edits
+
+      setUserData(prev => {
+          const newUserData: UserData = {
+              ...prev,
+              editedTranscripts: {
+                  ...prev.editedTranscripts,
+                  [videoId]: newTranscript,
+              }
+          };
+          saveUserData(newUserData, currentUser);
+          return newUserData;
+      });
+  }, [currentUser, saveUserData]);
 
   const handleRedownload = useCallback(async (record: DownloadRecord) => {
     const video = videos.find(v => v.id === record.videoId);
@@ -210,10 +288,21 @@ const App: React.FC = () => {
             downloadFile(record.fileName, content);
         }
 
-        setDownloadHistory(prev => {
-            const updatedRecord = { ...record, downloadedAt: new Date() };
-            return [updatedRecord, ...prev.filter(r => r.id !== record.id)];
-        });
+        const updateHistory = (prev: UserData): UserData => {
+          const updatedRecord = { ...record, downloadedAt: new Date() };
+          const newHistory = [updatedRecord, ...prev.downloadHistory.filter(r => r.id !== record.id)];
+          return { ...prev, downloadHistory: newHistory };
+        };
+
+        if (currentUser) {
+            setUserData(prev => {
+                const newUserData = updateHistory(prev);
+                saveUserData(newUserData, currentUser);
+                return newUserData;
+            });
+        } else {
+            setUserData(updateHistory);
+        }
 
     } catch (err) {
         console.error("Error re-downloading transcript:", err);
@@ -221,7 +310,7 @@ const App: React.FC = () => {
     } finally {
         setRedownloadingId(null);
     }
-  }, [videos, currentPlaylistTopic]);
+  }, [videos, currentPlaylistTopic, currentUser, saveUserData]);
 
   const playlistGroups = useMemo(() => {
     const groups = new Map<string, number>();
@@ -335,8 +424,24 @@ const App: React.FC = () => {
   const progressPercentage = batchProgress.total > 0 ? (batchProgress.processed / batchProgress.total) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <header className="w-full max-w-2xl text-center mb-8">
+    <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8 relative">
+       <div className="w-full max-w-7xl absolute top-0 right-0 p-4 sm:p-6 md:p-8 flex justify-end z-10">
+          {currentUser ? (
+              <div className="flex items-center gap-4 bg-gray-800 bg-opacity-80 p-2 rounded-lg">
+                  <span className="text-gray-300">Welcome, <span className="font-bold">{currentUser}</span>!</span>
+                  <button onClick={handleLogout} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition-colors">
+                      Logout
+                  </button>
+              </div>
+          ) : (
+              <button onClick={() => setIsAuthModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-lg">
+                  <UserIcon className="w-5 h-5" />
+                  Login to Sync
+              </button>
+          )}
+      </div>
+
+      <header className="w-full max-w-2xl text-center mb-8 mt-16 sm:mt-12">
         <div className="flex items-center justify-center gap-4 mb-2">
             <YouTubeIcon className="w-16 h-16 text-red-600" />
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Playlist Transcript Fetcher</h1>
@@ -428,6 +533,13 @@ const App: React.FC = () => {
         )}
       </main>
 
+       {isAuthModalOpen && (
+          <AuthModal 
+              onClose={() => setIsAuthModalOpen(false)} 
+              onLogin={handleLogin}
+          />
+      )}
+
       {selectedVideo && (
         <TranscriptModal
           videoId={selectedVideo.id}
@@ -448,6 +560,9 @@ const App: React.FC = () => {
           onExtractKeyTopics={handleExtractKeyTopics}
           onGenerate={handleGenerateTranscript}
           supportedLanguages={SUPPORTED_LANGUAGES}
+          editedTranscript={userData.editedTranscripts[selectedVideo.id]}
+          onSaveEditedTranscript={handleSaveEditedTranscript}
+          isLoggedIn={!!currentUser}
         />
       )}
     </div>

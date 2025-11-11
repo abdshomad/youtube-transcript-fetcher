@@ -35,9 +35,12 @@ interface TranscriptModalProps {
   onExtractKeyTopics: (transcript: string) => void;
   onGenerate: (language: string) => void;
   supportedLanguages: string[];
+  editedTranscript: string | undefined;
+  onSaveEditedTranscript: (videoId: string, newTranscript: string) => void;
+  isLoggedIn: boolean;
 }
 
-const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, keyTopics, isLoadingKeyTopics, keyTopicsError, onExtractKeyTopics, onGenerate, supportedLanguages }) => {
+const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, keyTopics, isLoadingKeyTopics, keyTopicsError, onExtractKeyTopics, onGenerate, supportedLanguages, editedTranscript: savedEditedTranscript, onSaveEditedTranscript, isLoggedIn }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -53,11 +56,10 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
   const [editedTranscript, setEditedTranscript] = useState('');
   
   useEffect(() => {
-    const savedTranscript = localStorage.getItem(`transcript_${videoId}`);
-    const initialTranscript = savedTranscript ?? transcript;
+    const initialTranscript = savedEditedTranscript ?? transcript;
     setCurrentTranscript(initialTranscript);
     setEditedTranscript(initialTranscript);
-  }, [transcript, videoId]);
+  }, [transcript, savedEditedTranscript]);
 
 
   useEffect(() => {
@@ -190,7 +192,7 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
   }
 
   const handleSave = () => {
-    localStorage.setItem(`transcript_${videoId}`, editedTranscript);
+    onSaveEditedTranscript(videoId, editedTranscript);
     setCurrentTranscript(editedTranscript);
     setIsEditing(false);
   };
@@ -407,7 +409,12 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setIsEditing(true)} disabled={isLoading || !!error || !currentTranscript} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+                            <button 
+                                onClick={() => setIsEditing(true)} 
+                                disabled={isLoading || !!error || !currentTranscript || !isLoggedIn}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
+                                title={!isLoggedIn ? "Login to save your edits" : "Edit transcript"}
+                            >
                                 <EditIcon className="w-5 h-5" />
                                 Edit
                             </button>
