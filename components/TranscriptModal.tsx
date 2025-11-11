@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import Spinner from './ui/Spinner';
 import DownloadIcon from './icons/DownloadIcon';
 
+declare var JSZip: any;
+
 interface TranscriptModalProps {
   videoTitle: string;
   transcript: string;
@@ -34,21 +36,30 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcrip
     };
   }, [onClose]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!transcript) return;
 
     const safeTitle = videoTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const filename = `transcript_${safeTitle}.txt`;
+    const txtFilename = `transcript_${safeTitle}.txt`;
+    const zipFilename = `transcript_${safeTitle}.zip`;
 
-    const blob = new Blob([transcript], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const zip = new JSZip();
+      zip.file(txtFilename, transcript);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = zipFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error creating ZIP file:", err);
+    }
   };
 
 
