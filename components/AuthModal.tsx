@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import UserIcon from './icons/UserIcon';
 import Spinner from './ui/Spinner';
+import GoogleIcon from './icons/GoogleIcon';
 
 interface AuthModalProps {
     onClose: () => void;
@@ -10,11 +11,7 @@ interface AuthModalProps {
 
 const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
     const modalRef = useRef<HTMLDivElement>(null);
-    const usernameInputRef = useRef<HTMLInputElement>(null);
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         const handleEscape = (event: KeyboardEvent) => {
@@ -27,27 +24,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
         };
         document.addEventListener('keydown', handleEscape);
         document.addEventListener('mousedown', handleClickOutside);
-        usernameInputRef.current?.focus();
         return () => {
             document.removeEventListener('keydown', handleEscape);
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [onClose]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        if (!username.trim() || !password.trim()) {
-            setError('Please enter a username and password.');
-            return;
-        }
-
+    const handleLoginClick = () => {
         setIsLoading(true);
-        // Simulate network delay
+        // Simulate network delay for Google authentication
         setTimeout(() => {
             setIsLoading(false);
-            onLogin(username.trim());
-        }, 1000);
+            onLogin('Google User'); // Login with a generic username
+        }, 1500);
     };
 
     return (
@@ -63,46 +52,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none font-bold">&times;</button>
                 </header>
-                <form onSubmit={handleSubmit}>
-                    <main className="p-6 space-y-4">
-                        <p className="text-sm text-gray-400">
-                            This is a simulated login. Enter any username and password to "log in" and sync your data across sessions.
-                        </p>
-                        <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">Username</label>
-                            <input
-                                ref={usernameInputRef}
-                                id="username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                                disabled={isLoading}
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="password-mock" className="block text-sm font-medium text-gray-300 mb-1">Password</label>
-                            <input
-                                id="password-mock"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                                disabled={isLoading}
-                            />
-                        </div>
-                        {error && <p className="text-red-400 text-sm">{error}</p>}
-                    </main>
-                    <footer className="p-4 border-t border-gray-700">
-                        <button
-                            type="submit"
-                            disabled={isLoading || !username.trim() || !password.trim()}
-                            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? <Spinner /> : 'Log In'}
-                        </button>
-                    </footer>
-                </form>
+                <main className="p-8 text-center">
+                    <p className="text-gray-300 mb-6">
+                        Sign in with your Google account to save your download history and transcript edits across sessions.
+                    </p>
+                    <button
+                        onClick={handleLoginClick}
+                        disabled={isLoading}
+                        className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-gray-800 font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-3 shadow-md"
+                    >
+                        {isLoading ? (
+                            <Spinner className="w-6 h-6 text-gray-700" />
+                        ) : (
+                            <>
+                                <GoogleIcon className="w-6 h-6" />
+                                Sign in with Google
+                            </>
+                        )}
+                    </button>
+                </main>
             </div>
             <style>{`
                 @keyframes scale-in {

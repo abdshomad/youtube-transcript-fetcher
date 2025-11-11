@@ -1,4 +1,5 @@
 
+
 # Next Enhancements Suggestions (Phase 1)
 
 This document outlines potential future enhancements for the YouTube Playlist Transcript Fetcher application to expand its capabilities and provide more value to users.
@@ -28,7 +29,7 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 ### NE005 - User Accounts and Cloud Sync
 - **Status**: Implemented
 - **Date**: 17 Nov 2025
-- **Description**: Implemented a simple user authentication system (mocked). This enables the synchronization of download history and edited transcripts across multiple browser sessions, moving beyond single-session state. User data is stored in local storage, keyed by username.
+- **Description**: Implemented a simple, simulated Google account authentication system. This enables the synchronization of download history and edited transcripts across multiple browser sessions, moving beyond single-session state. User data is stored in local storage, keyed by a generic "Google User" username.
 
 ### NE006 - Multi-Language Transcript Support
 - **Status**: Implemented
