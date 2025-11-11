@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import Spinner from './ui/Spinner';
 import DownloadIcon from './icons/DownloadIcon';
 import { toSrt, toVtt } from '../utils/transcriptFormatters';
+import SearchIcon from './icons/SearchIcon';
+import ChevronUpIcon from './icons/ChevronUpIcon';
+import ChevronDownIcon from './icons/ChevronDownIcon';
+import XIcon from './icons/XIcon';
 
 declare var JSZip: any;
 
@@ -21,6 +25,12 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [matches, setMatches] = useState<{ start: number; end: number }[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+  // Fix: Replaced HTMLMarkElement with HTMLElement as it's a more general type and resolves the 'Cannot find name' error.
+  const highlightRefs = useRef<(HTMLElement | null)[]>([]);
+
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -32,11 +42,9 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
       }
     };
     const handleClickOutside = (event: MouseEvent) => {
-      // Close dropdown if clicked outside of it
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
-      // Close modal if clicked outside of it
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -50,6 +58,33 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [onClose, isDropdownOpen]);
+  
+   useEffect(() => {
+    if (!searchQuery || !transcript) {
+      setMatches([]);
+      setCurrentMatchIndex(-1);
+      return;
+    }
+    const regex = new RegExp(searchQuery, 'gi');
+    const newMatches: { start: number; end: number }[] = [];
+    let match;
+    while ((match = regex.exec(transcript)) !== null) {
+      newMatches.push({ start: match.index, end: regex.lastIndex });
+    }
+    setMatches(newMatches);
+    setCurrentMatchIndex(newMatches.length > 0 ? 0 : -1);
+    highlightRefs.current = new Array(newMatches.length);
+  }, [searchQuery, transcript]);
+
+  useEffect(() => {
+    if (currentMatchIndex !== -1 && highlightRefs.current[currentMatchIndex]) {
+      highlightRefs.current[currentMatchIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [currentMatchIndex]);
+
 
   const downloadFile = (filename: string, content: string | Blob) => {
     const blob = content instanceof Blob ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -99,6 +134,48 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
       console.error(`Error creating download for format ${format}:`, err);
     }
   };
+  
+  const handlePrevMatch = () => {
+    if (matches.length > 0) {
+      setCurrentMatchIndex(prev => (prev - 1 + matches.length) % matches.length);
+    }
+  };
+  const handleNextMatch = () => {
+    if (matches.length > 0) {
+      setCurrentMatchIndex(prev => (prev + 1) % matches.length);
+    }
+  };
+
+  const renderHighlightedTranscript = () => {
+    if (!searchQuery || matches.length === 0) {
+        return <>{transcript}</>;
+    }
+
+    const parts = [];
+    let lastIndex = 0;
+
+    matches.forEach((match, index) => {
+        if (match.start > lastIndex) {
+            parts.push(transcript.substring(lastIndex, match.start));
+        }
+        parts.push(
+            <mark
+                key={`match-${index}`}
+                ref={el => (highlightRefs.current[index] = el)}
+                className={index === currentMatchIndex ? 'bg-orange-500 text-black px-1 rounded' : 'bg-yellow-500 bg-opacity-70 px-1 rounded'}
+            >
+                {transcript.substring(match.start, match.end)}
+            </mark>
+        );
+        lastIndex = match.end;
+    });
+
+    if (lastIndex < transcript.length) {
+        parts.push(transcript.substring(lastIndex));
+    }
+
+    return <>{parts}</>;
+  };
 
 
   return (
@@ -125,13 +202,37 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
           )}
           {!isLoading && !error && (
             <div className="prose prose-invert max-w-none whitespace-pre-wrap text-gray-300">
-                {transcript.split('\n\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                ))}
+                {renderHighlightedTranscript()}
             </div>
           )}
         </main>
-        <footer className="p-4 border-t border-gray-700 flex justify-end">
+        <footer className="p-4 border-t border-gray-700 flex justify-between items-center gap-4 flex-wrap">
+           <div className="flex items-center gap-2 bg-gray-700 rounded-lg px-2 max-w-sm flex-grow">
+              <SearchIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <input
+                  type="text"
+                  placeholder="Search transcript..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="bg-transparent text-white outline-none py-2 w-full text-sm"
+              />
+              {searchQuery && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                      <span className="text-gray-400 text-sm whitespace-nowrap">
+                          {matches.length > 0 ? `${currentMatchIndex + 1} of ${matches.length}` : '0 of 0'}
+                      </span>
+                      <button onClick={handlePrevMatch} disabled={matches.length === 0} className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed">
+                          <ChevronUpIcon className="w-5 h-5" />
+                      </button>
+                      <button onClick={handleNextMatch} disabled={matches.length === 0} className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed">
+                          <ChevronDownIcon className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => setSearchQuery('')} className="p-1 text-gray-400 hover:text-white">
+                          <XIcon className="w-5 h-5" />
+                      </button>
+                  </div>
+              )}
+          </div>
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
