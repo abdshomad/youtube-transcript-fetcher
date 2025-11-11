@@ -163,6 +163,17 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
     }
   };
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && matches.length > 0) {
+        e.preventDefault();
+        if (e.shiftKey) {
+            handlePrevMatch();
+        } else {
+            handleNextMatch();
+        }
+    }
+  }
+
   const handleSave = () => {
     localStorage.setItem(`transcript_${videoId}`, editedTranscript);
     setCurrentTranscript(editedTranscript);
@@ -254,6 +265,7 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
                             placeholder="Search transcript..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
+                            onKeyDown={handleSearchKeyDown}
                             className="bg-transparent text-white outline-none py-2 w-full text-sm"
                         />
                         {searchQuery && (
