@@ -12,6 +12,7 @@ import SaveIcon from './icons/SaveIcon';
 import SparklesIcon from './icons/SparklesIcon';
 import LanguageIcon from './icons/LanguageIcon';
 import TagIcon from './icons/TagIcon';
+import RedownloadIcon from './icons/RedownloadIcon';
 
 
 declare var JSZip: any;
@@ -245,8 +246,15 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-center">
-          <p className="text-red-400">{error}</p>
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+          <p className="text-red-400 mb-6">{error}</p>
+           <button
+            onClick={() => onGenerate(selectedLanguage)}
+            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <RedownloadIcon className="w-5 h-5" />
+            Retry
+          </button>
         </div>
       );
     }
