@@ -16,6 +16,7 @@ declare var JSZip: any;
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
+  const [playlistTopicInput, setPlaylistTopicInput] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoadingPlaylist, setIsLoadingPlaylist] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +36,8 @@ const App: React.FC = () => {
   const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
   
   const handleFetchPlaylist = useCallback(async () => {
-    if (!playlistUrl.trim()) {
+    const input = playlistUrl.trim() || playlistTopicInput.trim();
+    if (!input) {
         setError("Please enter a YouTube playlist URL or a topic.");
         return;
     }
@@ -44,7 +46,7 @@ const App: React.FC = () => {
     setVideos([]);
     
     try {
-      const { playlistTitle, videos } = await fetchYouTubePlaylist(playlistUrl.trim());
+      const { playlistTitle, videos } = await fetchYouTubePlaylist(input);
       setVideos(videos);
       setCurrentPlaylistTopic(playlistTitle);
 
@@ -55,7 +57,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoadingPlaylist(false);
     }
-  }, [playlistUrl]);
+  }, [playlistUrl, playlistTopicInput]);
 
   
   const handleGetTranscript = useCallback(async (video: Video) => {
@@ -203,7 +205,7 @@ const App: React.FC = () => {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Playlist Transcript Fetcher</h1>
         </div>
         <p className="text-gray-400 text-md sm:text-lg">
-            Enter a YouTube playlist URL or a topic to fetch AI-generated transcripts for any video.
+           Enter a YouTube playlist URL directly, or search for a topic to find a relevant playlist.
         </p>
       </header>
 
@@ -211,6 +213,8 @@ const App: React.FC = () => {
         <PlaylistForm 
           url={playlistUrl}
           setUrl={setPlaylistUrl}
+          topic={playlistTopicInput}
+          setTopic={setPlaylistTopicInput}
           onSubmit={handleFetchPlaylist}
           isLoading={isLoadingPlaylist}
         />

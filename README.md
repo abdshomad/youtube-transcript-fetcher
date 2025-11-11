@@ -39,7 +39,7 @@ import { generateTranscript } from './services/mockApiService';
 
 ## Usage
 
-1.  Enter a YouTube playlist URL or a topic into the input field (e.g., "baking sourdough bread").
+1.  Enter a public YouTube playlist URL into the first input field, **OR** search for a topic in the second input field (e.g., "baking sourdough bread").
 2.  Click the **"Fetch Playlist"** button.
 3.  Wait for the playlist to be fetched and displayed.
 4.  Click the **"Get Transcript"** button on any video card.
