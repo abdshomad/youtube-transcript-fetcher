@@ -4,22 +4,21 @@ import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
-import { generatePlaylistData, generateTranscript, generatePlaylistPreview } from './services/geminiService';
+import { generatePlaylistByTopic, fetchPlaylistByUrl, generateTranscript } from './services/geminiService';
 // import { generatePlaylistData, generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
 import { toSrt, toVtt } from './utils/transcriptFormatters';
 import PlaylistHistoryMenu from './components/PlaylistHistoryMenu';
-import PlaylistPreview from './components/PlaylistPreview';
-import Spinner from './components/ui/Spinner';
+
 
 declare var JSZip: any;
+
+const YOUTUBE_PLAYLIST_URL_REGEX = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)/;
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
-  const [playlistPreview, setPlaylistPreview] = useState<string[] | null>(null);
   const [isLoadingPlaylist, setIsLoadingPlaylist] = useState(false);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -32,40 +31,36 @@ const App: React.FC = () => {
   const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
   const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
   
-  const handleGeneratePreview = useCallback(async () => {
-    setIsLoadingPreview(true);
+  const handleFetchPlaylist = useCallback(async () => {
+    setIsLoadingPlaylist(true);
     setError(null);
     setVideos([]);
-    setPlaylistPreview(null);
+    
     try {
-      const topic = playlistUrl.trim() || 'React development tutorials';
-      setCurrentPlaylistTopic(topic);
-      const fetchedTitles = await generatePlaylistPreview(topic);
-      setPlaylistPreview(fetchedTitles);
+      const input = playlistUrl.trim();
+      const isUrl = YOUTUBE_PLAYLIST_URL_REGEX.test(input);
+
+      if (isUrl) {
+          const { playlistTitle, videos } = await fetchPlaylistByUrl(input);
+          setVideos(videos);
+          setCurrentPlaylistTopic(playlistTitle);
+      } else {
+          // Treat as a topic
+          const topic = input || 'React development tutorials'; // Default topic
+          const fetchedVideos = await generatePlaylistByTopic(topic);
+          setVideos(fetchedVideos);
+          setCurrentPlaylistTopic(topic);
+      }
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      setError(`Failed to fetch playlist preview: ${errorMessage} Please try again.`);
+      setError(`Failed to fetch playlist: ${errorMessage} Please try again.`);
       console.error(err);
     } finally {
-      setIsLoadingPreview(false);
+      setIsLoadingPlaylist(false);
     }
   }, [playlistUrl]);
 
-  const handleGenerateFullPlaylist = useCallback(async () => {
-    setIsLoadingPlaylist(true);
-    setError(null);
-    setPlaylistPreview(null);
-    try {
-        const fetchedVideos = await generatePlaylistData(currentPlaylistTopic);
-        setVideos(fetchedVideos);
-    } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-        setError(`Failed to fetch playlist: ${errorMessage} Please try again.`);
-        console.error(err);
-    } finally {
-        setIsLoadingPlaylist(false);
-    }
-  }, [currentPlaylistTopic]);
   
   const handleGetTranscript = useCallback(async (video: Video) => {
     if (isLoadingTranscript) return;
@@ -95,6 +90,7 @@ const App: React.FC = () => {
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
      setDownloadHistory(prev => {
+      // FIX: Corrected typo from `new new Date()` to `new Date()`.
       const newRecord: DownloadRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
       
       // Select the playlist of the newly downloaded item
@@ -190,7 +186,7 @@ const App: React.FC = () => {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Playlist Transcript Fetcher</h1>
         </div>
         <p className="text-gray-400 text-md sm:text-lg">
-            Generate a mock playlist based on a topic and fetch AI-generated transcripts for any video.
+            Enter a YouTube playlist URL or a topic to fetch AI-generated transcripts for any video.
         </p>
       </header>
 
@@ -198,31 +194,17 @@ const App: React.FC = () => {
         <PlaylistForm 
           url={playlistUrl}
           setUrl={setPlaylistUrl}
-          onSubmit={handleGeneratePreview}
-          isLoading={isLoadingPreview}
+          onSubmit={handleFetchPlaylist}
+          isLoading={isLoadingPlaylist}
         />
         {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
-
-        {isLoadingPreview && <div className="flex justify-center items-center mt-8"><Spinner className="w-10 h-10 text-red-500"/></div>}
-
-        {playlistPreview && !isLoadingPreview && (
-          <PlaylistPreview
-            topic={currentPlaylistTopic}
-            titles={playlistPreview}
-            onConfirm={handleGenerateFullPlaylist}
-            onCancel={() => setPlaylistPreview(null)}
-            isLoading={isLoadingPlaylist}
-          />
-        )}
         
-        {!playlistPreview && (
-           <VideoGrid
-            videos={videos}
-            onGetTranscript={handleGetTranscript}
-            isLoading={isLoadingPlaylist}
-            loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
-          />
-        )}
+        <VideoGrid
+          videos={videos}
+          onGetTranscript={handleGetTranscript}
+          isLoading={isLoadingPlaylist}
+          loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
+        />
         
         {downloadHistory.length > 0 && (
           <div className="w-full max-w-7xl mt-12 grid grid-cols-1 md:grid-cols-4 gap-8">

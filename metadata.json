@@ -1,5 +1,5 @@
 {
   "name": "YouTube Playlist Transcript Fetcher",
-  "description": "An application that takes a YouTube playlist topic, generates a mockup list of videos, and fetches a generated transcript for any selected video using the Gemini API.",
+  "description": "An application that takes a YouTube playlist URL or topic, uses the Gemini API to simulate a high-fidelity YouTube API response to generate a list of videos, and fetches generated transcripts.",
   "requestFramePermissions": []
 }

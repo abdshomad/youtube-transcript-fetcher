@@ -7,7 +7,7 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 ### NE001 - Real YouTube API Integration
 - **Status**: Suggested
 - **Date**: 11 Nov 2025
-- **Description**: Instead of generating mock playlists, integrate with the official YouTube Data API. This would allow users to fetch real playlists by URL or generate playlists based on actual YouTube search results for a topic, making the tool vastly more practical.
+- **Description**: Replace the current Gemini-powered *simulation* of the YouTube API with a direct integration to the official YouTube Data API. This would allow users to fetch real, live playlist data instead of AI-generated mockups, making the tool vastly more practical for real-world use.
 
 ### NE002 - AI-Powered Transcript Summarization
 - **Status**: Suggested

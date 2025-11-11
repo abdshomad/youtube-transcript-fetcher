@@ -4,72 +4,67 @@ A comprehensive list of all features implemented in the YouTube Playlist Transcr
 
 ---
 
-### FL001 - Dynamic Playlist Generation from Topic
+### FL001 - Simulated Playlist Generation from Topic or URL
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
-- **Description**: Users can enter any topic to generate a realistic, 8-video YouTube playlist using the Gemini API, complete with titles, channel names, and thumbnails.
+- **Description**: The application uses the Gemini API to simulate fetching a YouTube playlist. When a user provides a real YouTube playlist URL, the AI generates a response that mimics the structure of the official YouTube Data API. For topic-based searches, it generates a relevant, realistic-looking 8-video playlist. This demonstrates AI's ability to create high-fidelity mock API data.
 
-### FL002 - Playlist Titles Preview
-- **Status**: Implemented
-- **Date**: 11 Nov 2025
-- **Description**: Before generating the full playlist, users can preview a list of 8 generated video titles to ensure they are relevant, and then confirm or cancel.
-
-### FL003 - AI-Powered Transcript Generation
+### FL002 - AI-Powered Transcript Generation
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: Users can select any video from the generated playlist to fetch a plausible, AI-generated transcript.
 
-### FL004 - Interactive Transcript Modal
+### FL003 - Interactive Transcript Modal
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: Transcripts are displayed in a clean, accessible, and responsive modal window that prevents background interaction.
 
-### FL005 - In-App Transcript Editing
+### FL004 - In-App Transcript Editing
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: Users can edit the fetched transcript directly within the modal. Changes are saved to the browser's local storage, persisting for that specific video.
 
-### FL006 - Transcript Content Search
+### FL005 - Transcript Content Search
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: A search input within the modal allows users to find and highlight all occurrences of a specific word or phrase within the transcript.
 
-### FL007 - Search Result Navigation (UI & Keyboard)
+### FL006 - Search Result Navigation (UI & Keyboard)
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: Users can navigate between highlighted search results using dedicated "previous" and "next" buttons, as well as keyboard shortcuts (`Enter` for next, `Shift+Enter` for previous).
 
-### FL008 - Multi-Format Transcript Download (.txt, .srt, .vtt)
+### FL007 - Multi-Format Transcript Download (.txt, .srt, .vtt)
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: The transcript can be downloaded in multiple standard formats: plain text (.txt), SubRip subtitle (.srt), and WebVTT (.vtt).
 
-### FL009 - Bulk Transcript Download (.zip)
+### FL008 - Bulk Transcript Download (.zip)
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: A "Download All" option allows users to download a .zip archive containing the transcript in all available formats (.txt, .srt, and .vtt) with a single click.
 
-### FL010 - Persistent Download History
+### FL009 - Persistent Download History
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: Every transcript download is automatically recorded in a "Download History" section, tracking video title, filename, and download time.
 
-### FL011 - Download History Filtering by Playlist
+### FL010 - Download History Filtering by Playlist
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: The download history is grouped by playlist topic, with a sidebar menu allowing users to filter and view downloads from specific playlists or all at once.
 
-### FL012 - One-Click Re-download from History
+### FL011 - One-Click Re-download from History
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: Users can re-download any transcript directly from the history list, which fetches a fresh version and saves it with the original filename and format.
 
-### FL013 - Fully Responsive User Interface
+### FL012 - Fully Responsive User Interface
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: The application is built with a mobile-first approach using Tailwind CSS, ensuring a seamless experience across all device sizes from phones to desktops.
 
-### FL014 - Comprehensive Loading and Error States
+### FL013 - Comprehensive Loading and Error States
 - **Status**: Implemented
 - **Date**: 11 Nov 2025
 - **Description**: The UI provides clear visual feedback during data fetching (skeletons, spinners) and displays user-friendly messages for API errors or other issues.
