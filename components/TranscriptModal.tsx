@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Spinner from './ui/Spinner';
 import DownloadIcon from './icons/DownloadIcon';
+import { toSrt, toVtt } from '../utils/transcriptFormatters';
 
 declare var JSZip: any;
 
@@ -14,14 +15,25 @@ interface TranscriptModalProps {
 
 const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcript, isLoading, onClose, error }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        if (isDropdownOpen) {
+          setIsDropdownOpen(false);
+        } else {
+          onClose();
+        }
       }
     };
     const handleClickOutside = (event: MouseEvent) => {
+      // Close dropdown if clicked outside of it
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+      // Close modal if clicked outside of it
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -34,31 +46,46 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcrip
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onClose]);
+  }, [onClose, isDropdownOpen]);
 
-  const handleDownload = async () => {
+  const downloadFile = (filename: string, content: string | Blob) => {
+    const blob = content instanceof Blob ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownload = async (format: 'txt' | 'srt' | 'vtt' | 'all') => {
     if (!transcript) return;
+    setIsDropdownOpen(false);
 
     const safeTitle = videoTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const txtFilename = `transcript_${safeTitle}.txt`;
-    const zipFilename = `transcript_${safeTitle}.zip`;
 
     try {
-      const zip = new JSZip();
-      zip.file(txtFilename, transcript);
+      if (format === 'txt') {
+        downloadFile(`transcript_${safeTitle}.txt`, transcript);
+      } else if (format === 'srt') {
+        const srtContent = toSrt(transcript);
+        downloadFile(`transcript_${safeTitle}.srt`, srtContent);
+      } else if (format === 'vtt') {
+        const vttContent = toVtt(transcript);
+        downloadFile(`transcript_${safeTitle}.vtt`, vttContent);
+      } else if (format === 'all') {
+        const zip = new JSZip();
+        zip.file(`transcript_${safeTitle}.txt`, transcript);
+        zip.file(`transcript_${safeTitle}.srt`, toSrt(transcript));
+        zip.file(`transcript_${safeTitle}.vtt`, toVtt(transcript));
 
-      const content = await zip.generateAsync({ type: 'blob' });
-
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = zipFilename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+        const content = await zip.generateAsync({ type: 'blob' });
+        downloadFile(`transcripts_${safeTitle}.zip`, content);
+      }
     } catch (err) {
-      console.error("Error creating ZIP file:", err);
+      console.error(`Error creating download for format ${format}:`, err);
     }
   };
 
@@ -93,15 +120,60 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoTitle, transcrip
             </div>
           )}
         </main>
-         <footer className="p-4 border-t border-gray-700 flex justify-end">
-          <button
-            onClick={handleDownload}
-            disabled={isLoading || !!error || !transcript}
-            className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-          >
-            <DownloadIcon className="w-5 h-5" />
-            Download
-          </button>
+        <footer className="p-4 border-t border-gray-700 flex justify-end">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              disabled={isLoading || !!error || !transcript}
+              className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+              aria-haspopup="true"
+              aria-expanded={isDropdownOpen}
+            >
+              <DownloadIcon className="w-5 h-5" />
+              Download
+              <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="origin-top-right absolute right-0 bottom-full mb-2 w-56 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5 z-10">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  <a
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); handleDownload('txt'); }}
+                    className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
+                    role="menuitem"
+                  >
+                    Download as .txt
+                  </a>
+                  <a
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); handleDownload('srt'); }}
+                    className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
+                    role="menuitem"
+                  >
+                    Download as .srt
+                  </a>
+                  <a
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); handleDownload('vtt'); }}
+                    className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600"
+                    role="menuitem"
+                  >
+                    Download as .vtt
+                  </a>
+                  <div className="border-t border-gray-600 my-1"></div>
+                  <a
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); handleDownload('all'); }}
+                    className="block px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-600"
+                    role="menuitem"
+                  >
+                    Download All (.zip)
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
         </footer>
       </div>
        <style>{`
