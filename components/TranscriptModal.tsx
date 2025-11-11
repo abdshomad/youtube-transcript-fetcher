@@ -10,6 +10,7 @@ import EditIcon from './icons/EditIcon';
 import SaveIcon from './icons/SaveIcon';
 import SparklesIcon from './icons/SparklesIcon';
 import LanguageIcon from './icons/LanguageIcon';
+import TagIcon from './icons/TagIcon';
 
 
 declare var JSZip: any;
@@ -27,12 +28,16 @@ interface TranscriptModalProps {
   isLoadingSummary: boolean;
   summaryError: string | null;
   onGetSummary: (transcript: string) => void;
+  keyTopics: string[];
+  isLoadingKeyTopics: boolean;
+  keyTopicsError: string | null;
+  onExtractKeyTopics: (transcript: string) => void;
   onGenerate: (language: string) => void;
 }
 
 const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Mandarin Chinese', 'Hindi', 'Portuguese'];
 
-const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, onGenerate }) => {
+const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic, summary, isLoadingSummary, summaryError, onGetSummary, keyTopics, isLoadingKeyTopics, keyTopicsError, onExtractKeyTopics, onGenerate }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -295,6 +300,37 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
               </div>
           )}
 
+          {(isLoadingKeyTopics || keyTopicsError || keyTopics.length > 0) && (
+              <div className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                  <h3 className="font-bold text-md mb-2 text-gray-200 flex items-center gap-2">
+                      <TagIcon className="w-5 h-5 text-teal-400" />
+                      Key Topics
+                  </h3>
+                  {isLoadingKeyTopics && (
+                      <div className="flex items-center gap-2 text-gray-400">
+                          <Spinner className="w-4 h-4" />
+                          <span>Extracting topics...</span>
+                      </div>
+                  )}
+                  {keyTopicsError && !isLoadingKeyTopics && (
+                      <p className="text-red-400">{keyTopicsError}</p>
+                  )}
+                  {keyTopics.length > 0 && !isLoadingKeyTopics && (
+                      <div className="flex flex-wrap gap-2">
+                          {keyTopics.map((topic, index) => (
+                              <button
+                                  key={index}
+                                  onClick={() => setSearchQuery(topic)}
+                                  className="bg-gray-700 hover:bg-gray-600 text-teal-300 text-sm font-medium px-3 py-1 rounded-full transition-colors"
+                              >
+                                  {topic}
+                              </button>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
           {isEditing ? (
             <textarea
               value={editedTranscript}
@@ -374,6 +410,13 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
                             <button onClick={() => setIsEditing(true)} disabled={isLoading || !!error || !currentTranscript} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
                                 <EditIcon className="w-5 h-5" />
                                 Edit
+                            </button>
+                            <button 
+                                onClick={() => onExtractKeyTopics(currentTranscript)} 
+                                disabled={isLoading || !!error || !currentTranscript || isLoadingKeyTopics || keyTopics.length > 0}
+                                className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-900 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+                                {isLoadingKeyTopics ? <Spinner className="w-5 h-5" /> : <TagIcon className="w-5 h-5" />}
+                                {keyTopics.length > 0 ? 'Topics Extracted' : 'Extract Topics'}
                             </button>
                              <button 
                                 onClick={() => onGetSummary(currentTranscript)} 

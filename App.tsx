@@ -4,7 +4,7 @@ import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
-import { generateTranscript, generateSummary } from './services/geminiService';
+import { generateTranscript, generateSummary, extractKeyTopics } from './services/geminiService';
 import { fetchYouTubePlaylist } from './services/youtubeService';
 // import { generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
@@ -29,6 +29,10 @@ const App: React.FC = () => {
   const [summary, setSummary] = useState('');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  const [keyTopics, setKeyTopics] = useState<string[]>([]);
+  const [isLoadingKeyTopics, setIsLoadingKeyTopics] = useState(false);
+  const [keyTopicsError, setKeyTopicsError] = useState<string | null>(null);
 
   const [currentPlaylistTopic, setCurrentPlaylistTopic] = useState<string>('');
   const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
@@ -66,6 +70,8 @@ const App: React.FC = () => {
     setTranscriptError(null);
     setSummary('');
     setSummaryError(null);
+    setKeyTopics([]);
+    setKeyTopicsError(null);
   }, []);
 
   const handleGenerateTranscript = useCallback(async (language: string) => {
@@ -105,6 +111,25 @@ const App: React.FC = () => {
     }
   }, [isLoadingSummary]);
 
+  const handleExtractKeyTopics = useCallback(async (transcriptToAnalyze: string) => {
+    if (isLoadingKeyTopics || !transcriptToAnalyze) return;
+    
+    setIsLoadingKeyTopics(true);
+    setKeyTopics([]);
+    setKeyTopicsError(null);
+
+    try {
+        const fetchedTopics = await extractKeyTopics(transcriptToAnalyze);
+        setKeyTopics(fetchedTopics);
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        setKeyTopicsError(errorMessage);
+        console.error(err);
+    } finally {
+        setIsLoadingKeyTopics(false);
+    }
+  }, [isLoadingKeyTopics]);
+
 
   const handleCloseModal = () => {
     setSelectedVideo(null);
@@ -112,6 +137,8 @@ const App: React.FC = () => {
     setTranscriptError(null);
     setSummary('');
     setSummaryError(null);
+    setKeyTopics([]);
+    setKeyTopicsError(null);
   };
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
@@ -269,6 +296,10 @@ const App: React.FC = () => {
           isLoadingSummary={isLoadingSummary}
           summaryError={summaryError}
           onGetSummary={handleGetSummary}
+          keyTopics={keyTopics}
+          isLoadingKeyTopics={isLoadingKeyTopics}
+          keyTopicsError={keyTopicsError}
+          onExtractKeyTopics={handleExtractKeyTopics}
           onGenerate={handleGenerateTranscript}
         />
       )}

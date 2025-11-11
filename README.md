@@ -8,6 +8,7 @@ An application that uses the official **YouTube Data API** to fetch real video p
 - **AI-Powered Transcripts**: Select any video from the generated playlist to get a plausible, AI-generated transcript.
 - **Multi-Language Support**: Generate transcripts in various languages, including Spanish, French, German, and more.
 - **AI-Powered Summarization**: Generate a concise, bullet-point summary for any transcript with a single click.
+- **Key Topic Extraction**: Automatically identify and display key topics from the transcript as clickable tags for easy navigation.
 - **Responsive UI**: A clean, modern interface built with Tailwind CSS that works seamlessly on desktop and mobile devices.
 - **Interactive Modals**: Transcripts are displayed in an easy-to-read, accessible modal.
 - **Loading & Error States**: Smooth user experience with clear loading indicators and graceful error handling.

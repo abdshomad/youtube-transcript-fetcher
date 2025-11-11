@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -38,5 +38,41 @@ Summary:`;
     } catch (error) {
         console.error("Error generating summary:", error);
         throw new Error("The AI model could not generate a summary. This might be due to a network issue or API limitations.");
+    }
+};
+
+export const extractKeyTopics = async (transcript: string): Promise<string[]> => {
+    const prompt = `Extract the key topics and main concepts from the following transcript. Focus on specific terms, technologies, or ideas discussed. Provide between 5 and 10 topics. Return them as a JSON array of strings.
+
+Transcript:
+---
+${transcript}
+---
+
+Key Topics (as JSON array):`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.STRING,
+                        description: 'A key topic or concept from the transcript.'
+                    }
+                }
+            }
+        });
+        
+        const jsonText = response.text.trim();
+        const topics = JSON.parse(jsonText);
+        
+        return Array.isArray(topics) ? topics : [];
+    } catch (error) {
+        console.error("Error extracting key topics:", error);
+        throw new Error("The AI model could not extract topics. This might be due to a network issue or API limitations.");
     }
 };

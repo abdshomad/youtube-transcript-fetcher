@@ -15,9 +15,9 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 - **Description**: A "Summarize" feature has been added to the transcript modal. It uses the Gemini API to generate a concise, bullet-point summary of the full transcript, allowing users to grasp the key points of a video quickly.
 
 ### NE003 - Key Topics & Concepts Extraction
-- **Status**: Suggested
-- **Date**: 11 Nov 2025
-- **Description**: Use the Gemini API to analyze the transcript and extract a list of key topics, technical terms, or main concepts discussed. These could be displayed as clickable tags for quick navigation or reference.
+- **Status**: Implemented
+- **Date**: 15 Nov 2025
+- **Description**: An "Extract Topics" feature has been added. It uses the Gemini API to analyze the transcript and extract a list of key topics, which are then displayed as clickable tags that trigger an in-transcript search for easy navigation.
 
 ### NE004 - Batch Transcript Generation
 - **Status**: Suggested
@@ -30,9 +30,9 @@ This document outlines potential future enhancements for the YouTube Playlist Tr
 - **Description**: Implement a simple user authentication system. This would enable the synchronization of download history and edited transcripts across multiple devices, moving beyond browser-based local storage.
 
 ### NE006 - Multi-Language Transcript Support
-- **Status**: Suggested
-- **Date**: 11 Nov 2025
-- **Description**: Add an option for the user to select a target language. The Gemini API would then generate the transcript in the specified language, making the tool useful for a global audience.
+- **Status**: Implemented
+- **Date**: 14 Nov 2025
+- **Description**: An option has been added for the user to select a target language from a dropdown menu within the transcript modal. The Gemini API then generates the transcript in the specified language, making the tool useful for a global audience.
 
 ### NE007 - Advanced Prompt Customization
 - **Status**: Suggested
