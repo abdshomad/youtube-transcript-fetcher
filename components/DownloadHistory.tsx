@@ -2,12 +2,16 @@ import React from 'react';
 import type { DownloadRecord } from '../types';
 import { formatDistanceToNow } from '../utils/timeFormatters';
 import FileIcon from './icons/FileIcon';
+import RedownloadIcon from './icons/RedownloadIcon';
+import Spinner from './ui/Spinner';
 
 interface DownloadHistoryProps {
   history: DownloadRecord[];
+  onRedownload: (record: DownloadRecord) => void;
+  redownloadingId: string | null;
 }
 
-const DownloadHistory: React.FC<DownloadHistoryProps> = ({ history }) => {
+const DownloadHistory: React.FC<DownloadHistoryProps> = ({ history, onRedownload, redownloadingId }) => {
   if (history.length === 0) {
     return null; // Don't render anything if there's no history
   }
@@ -30,9 +34,20 @@ const DownloadHistory: React.FC<DownloadHistoryProps> = ({ history }) => {
                     </p>
                  </div>
               </div>
-              <p className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
-                {formatDistanceToNow(record.downloadedAt)}
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
+                  {formatDistanceToNow(record.downloadedAt)}
+                </p>
+                <button
+                    onClick={() => onRedownload(record)}
+                    disabled={!!redownloadingId}
+                    className="p-1 text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Re-download transcript"
+                    title="Re-download"
+                >
+                    {redownloadingId === record.id ? <Spinner className="w-5 h-5" /> : <RedownloadIcon className="w-5 h-5" />}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

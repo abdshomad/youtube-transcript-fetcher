@@ -8,6 +8,7 @@ export interface Video {
 
 export interface DownloadRecord {
   id: string;
+  videoId: string;
   videoTitle: string;
   format: 'txt' | 'srt' | 'vtt' | 'all';
   fileName: string;

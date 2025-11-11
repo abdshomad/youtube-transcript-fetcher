@@ -7,6 +7,9 @@ import YouTubeIcon from './components/icons/YouTubeIcon';
 // import { generatePlaylistData, generateTranscript } from './services/geminiService';
 import { generatePlaylistData, generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
+import { toSrt, toVtt } from './utils/transcriptFormatters';
+
+declare var JSZip: any;
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -20,6 +23,7 @@ const App: React.FC = () => {
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
 
   const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
+  const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
   
   const handleFetchPlaylist = useCallback(async () => {
     setIsLoadingPlaylist(true);
@@ -65,11 +69,68 @@ const App: React.FC = () => {
   };
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
-    setDownloadHistory(prev => [
-      { ...record, id: Date.now().toString(), downloadedAt: new Date() },
-      ...prev
-    ]);
+     setDownloadHistory(prev => {
+      const newRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
+      // Filter out any previous download for the same video and format to avoid duplicates
+      const otherRecords = prev.filter(r => !(r.videoId === record.videoId && r.format === record.format));
+      return [newRecord, ...otherRecords];
+    });
   }, []);
+
+  const handleRedownload = useCallback(async (record: DownloadRecord) => {
+    const video = videos.find(v => v.id === record.videoId);
+    if (!video) {
+        alert("Could not find the video in the current playlist. Please fetch the playlist again to re-download this transcript.");
+        return;
+    }
+
+    setRedownloadingId(record.id);
+    try {
+        const transcriptContent = await generateTranscript(video.title);
+
+        const downloadFile = (filename: string, content: string | Blob) => {
+            const blob = content instanceof Blob ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        };
+
+        const safeTitle = record.videoTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+        if (record.format === 'txt') {
+            downloadFile(record.fileName, transcriptContent);
+        } else if (record.format === 'srt') {
+            downloadFile(record.fileName, toSrt(transcriptContent));
+        } else if (record.format === 'vtt') {
+            downloadFile(record.fileName, toVtt(transcriptContent));
+        } else if (record.format === 'all') {
+            const zip = new JSZip();
+            zip.file(`transcript_${safeTitle}.txt`, transcriptContent);
+            zip.file(`transcript_${safeTitle}.srt`, toSrt(transcriptContent));
+            zip.file(`transcript_${safeTitle}.vtt`, toVtt(transcriptContent));
+            const content = await zip.generateAsync({ type: 'blob' });
+            downloadFile(record.fileName, content);
+        }
+
+        // Update timestamp and move to top of history
+        setDownloadHistory(prev => {
+            const updatedRecord = { ...record, downloadedAt: new Date() };
+            return [updatedRecord, ...prev.filter(r => r.id !== record.id)];
+        });
+
+    } catch (err) {
+        console.error("Error re-downloading transcript:", err);
+        alert("An error occurred while trying to re-download the transcript.");
+    } finally {
+        setRedownloadingId(null);
+    }
+  }, [videos]);
+
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
@@ -99,11 +160,16 @@ const App: React.FC = () => {
           loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
         />
         
-        <DownloadHistory history={downloadHistory} />
+        <DownloadHistory 
+            history={downloadHistory}
+            onRedownload={handleRedownload}
+            redownloadingId={redownloadingId}
+        />
       </main>
 
       {selectedVideo && (
         <TranscriptModal
+          videoId={selectedVideo.id}
           videoTitle={selectedVideo.title}
           transcript={transcript}
           isLoading={isLoadingTranscript}
