@@ -19,6 +19,20 @@ This application is built entirely on the frontend and leverages the Google Gemi
     1.  **Playlist Generation**: When a user submits a topic, a structured prompt is sent to Gemini, asking for a JSON object containing a list of videos that matches a predefined schema.
     2.  **Transcript Generation**: When a user requests a transcript for a specific video, a second prompt is sent to Gemini, asking it to generate a realistic, paragraph-based transcript for a video with that title.
 
+## 🧑‍💻 Development (Using Mock API)
+
+This project is currently configured to use a **mock API service** (`services/mockApiService.ts`). This allows for rapid UI development and testing without making actual calls to the Gemini API, which is useful for demonstrating the app's functionality without needing an API key. The mock service simulates network latency and returns realistic, hardcoded data.
+
+To switch to the live Gemini API, simply change the import in `App.tsx`:
+
+```javascript
+// From this:
+import { generatePlaylistData, generateTranscript } from './services/mockApiService';
+
+// To this:
+// import { generatePlaylistData, generateTranscript } from './services/geminiService';
+```
+
 ## Usage
 
 1.  Enter a topic for a playlist into the input field (e.g., "baking sourdough bread").

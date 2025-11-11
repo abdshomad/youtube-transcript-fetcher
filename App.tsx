@@ -1,11 +1,11 @@
-
 import React, { useState, useCallback } from 'react';
 import type { Video } from './types';
 import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
-import { generatePlaylistData, generateTranscript } from './services/geminiService';
+// import { generatePlaylistData, generateTranscript } from './services/geminiService';
+import { generatePlaylistData, generateTranscript } from './services/mockApiService';
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
