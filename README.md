@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# YouTube Playlist Transcript Fetcher
 
-# Run and deploy your AI Studio app
+A mockup application that demonstrates the power of the Google Gemini API to generate dynamic content. This tool allows users to input a topic, generate a realistic-looking YouTube playlist, and then fetch an AI-generated transcript for any video in that list.
 
-This contains everything you need to run your app locally.
+## ✨ Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1fTrrHikl-1M6KX_Dg0TgyLFGNS4oZZzG
+- **Dynamic Playlist Generation**: Enter any topic (e.g., "Beginner Python," "React Hooks Tutorial"), and the app uses the Gemini API to create a list of 8 relevant videos with titles, channel names, and placeholder thumbnails.
+- **AI-Powered Transcripts**: Select any video from the generated playlist to get a plausible, AI-generated transcript.
+- **Responsive UI**: A clean, modern interface built with Tailwind CSS that works seamlessly on desktop and mobile devices.
+- **Interactive Modals**: Transcripts are displayed in an easy-to-read, accessible modal.
+- **Loading & Error States**: Smooth user experience with clear loading indicators and graceful error handling.
 
-## Run Locally
+## 🚀 How It Works
 
-**Prerequisites:**  Node.js
+This application is built entirely on the frontend and leverages the Google Gemini API for its core functionality.
 
+- **Frontend**: Built with **React** and **TypeScript** for a robust and type-safe user interface. Styling is handled by **Tailwind CSS**.
+- **AI Model**: It uses `gemini-2.5-flash` via the `@google/genai` SDK for two main tasks:
+    1.  **Playlist Generation**: When a user submits a topic, a structured prompt is sent to Gemini, asking for a JSON object containing a list of videos that matches a predefined schema.
+    2.  **Transcript Generation**: When a user requests a transcript for a specific video, a second prompt is sent to Gemini, asking it to generate a realistic, paragraph-based transcript for a video with that title.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Usage
+
+1.  Enter a topic for a playlist into the input field (e.g., "baking sourdough bread").
+2.  Click the **"Fetch Playlist"** button.
+3.  Wait for the mock playlist to be generated and displayed.
+4.  Click the **"Get Transcript"** button on any video card.
+5.  A modal will appear, showing the AI-generated transcript for the selected video.
+6.  Click the '×' button, press the `Escape` key, or click outside the modal to close it.
