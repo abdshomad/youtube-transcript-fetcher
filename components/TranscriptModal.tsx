@@ -11,11 +11,12 @@ interface TranscriptModalProps {
   transcript: string;
   isLoading: boolean;
   onClose: () => void;
-  onDownload: (record: { videoId: string; videoTitle: string; format: 'txt' | 'srt' | 'vtt' | 'all'; fileName: string; }) => void;
+  playlistTopic: string;
+  onDownload: (record: { videoId: string; videoTitle: string; playlistTopic: string; format: 'txt' | 'srt' | 'vtt' | 'all'; fileName: string; }) => void;
   error: string | null;
 }
 
-const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error }) => {
+const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, transcript, isLoading, onClose, onDownload, error, playlistTopic }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -72,17 +73,17 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
       if (format === 'txt') {
         const fileName = `transcript_${safeTitle}.txt`;
         downloadFile(fileName, transcript);
-        onDownload({ videoId, videoTitle, format: 'txt', fileName });
+        onDownload({ videoId, videoTitle, playlistTopic, format: 'txt', fileName });
       } else if (format === 'srt') {
         const srtContent = toSrt(transcript);
         const fileName = `transcript_${safeTitle}.srt`;
         downloadFile(fileName, srtContent);
-        onDownload({ videoId, videoTitle, format: 'srt', fileName });
+        onDownload({ videoId, videoTitle, playlistTopic, format: 'srt', fileName });
       } else if (format === 'vtt') {
         const vttContent = toVtt(transcript);
         const fileName = `transcript_${safeTitle}.vtt`;
         downloadFile(fileName, vttContent);
-        onDownload({ videoId, videoTitle, format: 'vtt', fileName });
+        onDownload({ videoId, videoTitle, playlistTopic, format: 'vtt', fileName });
       } else if (format === 'all') {
         const zip = new JSZip();
         zip.file(`transcript_${safeTitle}.txt`, transcript);
@@ -92,7 +93,7 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
         const content = await zip.generateAsync({ type: 'blob' });
         const fileName = `transcripts_${safeTitle}.zip`;
         downloadFile(fileName, content);
-        onDownload({ videoId, videoTitle, format: 'all', fileName });
+        onDownload({ videoId, videoTitle, playlistTopic, format: 'all', fileName });
       }
     } catch (err) {
       console.error(`Error creating download for format ${format}:`, err);

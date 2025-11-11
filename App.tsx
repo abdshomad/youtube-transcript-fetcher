@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { Video, DownloadRecord } from './types';
 import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
@@ -8,6 +8,7 @@ import YouTubeIcon from './components/icons/YouTubeIcon';
 import { generatePlaylistData, generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
 import { toSrt, toVtt } from './utils/transcriptFormatters';
+import PlaylistHistoryMenu from './components/PlaylistHistoryMenu';
 
 declare var JSZip: any;
 
@@ -21,9 +22,11 @@ const App: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
-
+  
+  const [currentPlaylistTopic, setCurrentPlaylistTopic] = useState<string>('');
   const [downloadHistory, setDownloadHistory] = useState<DownloadRecord[]>([]);
   const [redownloadingId, setRedownloadingId] = useState<string | null>(null);
+  const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
   
   const handleFetchPlaylist = useCallback(async () => {
     setIsLoadingPlaylist(true);
@@ -31,6 +34,7 @@ const App: React.FC = () => {
     setVideos([]);
     try {
       const topic = playlistUrl.trim() || 'React development tutorials';
+      setCurrentPlaylistTopic(topic);
       const fetchedVideos = await generatePlaylistData(topic);
       setVideos(fetchedVideos);
     } catch (err) {
@@ -70,7 +74,11 @@ const App: React.FC = () => {
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
      setDownloadHistory(prev => {
-      const newRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
+      const newRecord: DownloadRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
+      
+      // Select the playlist of the newly downloaded item
+      setSelectedPlaylistTopic(newRecord.playlistTopic);
+
       // Filter out any previous download for the same video and format to avoid duplicates
       const otherRecords = prev.filter(r => !(r.videoId === record.videoId && r.format === record.format));
       return [newRecord, ...otherRecords];
@@ -78,11 +86,18 @@ const App: React.FC = () => {
   }, []);
 
   const handleRedownload = useCallback(async (record: DownloadRecord) => {
+    // This assumes the video is part of the currently loaded playlist.
+    // A more robust implementation might need to store video data alongside download records.
     const video = videos.find(v => v.id === record.videoId);
-    if (!video) {
-        alert("Could not find the video in the current playlist. Please fetch the playlist again to re-download this transcript.");
+    if (!video && record.playlistTopic !== currentPlaylistTopic) {
+        alert(`Please fetch the "${record.playlistTopic}" playlist again to re-download this transcript.`);
         return;
     }
+    if (!video) {
+        alert("Could not find the video in the current playlist. Please fetch the playlist again.");
+        return;
+    }
+
 
     setRedownloadingId(record.id);
     try {
@@ -129,8 +144,22 @@ const App: React.FC = () => {
     } finally {
         setRedownloadingId(null);
     }
-  }, [videos]);
+  }, [videos, currentPlaylistTopic]);
 
+  const playlistGroups = useMemo(() => {
+    const groups = new Map<string, number>();
+    downloadHistory.forEach(record => {
+        groups.set(record.playlistTopic, (groups.get(record.playlistTopic) || 0) + 1);
+    });
+    return groups;
+  }, [downloadHistory]);
+
+  const filteredHistory = useMemo(() => {
+      if (selectedPlaylistTopic === null && downloadHistory.length > 0) { // 'All' is selected
+          return downloadHistory;
+      }
+      return downloadHistory.filter(record => record.playlistTopic === selectedPlaylistTopic);
+  }, [downloadHistory, selectedPlaylistTopic]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
@@ -160,11 +189,26 @@ const App: React.FC = () => {
           loadingTranscriptFor={isLoadingTranscript ? selectedVideo?.id ?? null : null}
         />
         
-        <DownloadHistory 
-            history={downloadHistory}
-            onRedownload={handleRedownload}
-            redownloadingId={redownloadingId}
-        />
+        {downloadHistory.length > 0 && (
+          <div className="w-full max-w-7xl mt-12 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <aside className="md:col-span-1">
+              <PlaylistHistoryMenu
+                playlistGroups={playlistGroups}
+                selectedTopic={selectedPlaylistTopic}
+                onSelectTopic={setSelectedPlaylistTopic}
+                totalCount={downloadHistory.length}
+              />
+            </aside>
+            <section className="md:col-span-3">
+              <DownloadHistory 
+                  history={filteredHistory}
+                  onRedownload={handleRedownload}
+                  redownloadingId={redownloadingId}
+                  activePlaylistTopic={selectedPlaylistTopic}
+              />
+            </section>
+          </div>
+        )}
       </main>
 
       {selectedVideo && (
@@ -174,6 +218,7 @@ const App: React.FC = () => {
           transcript={transcript}
           isLoading={isLoadingTranscript}
           onClose={handleCloseModal}
+          playlistTopic={currentPlaylistTopic}
           onDownload={handleAddDownloadRecord}
           error={transcriptError}
         />
