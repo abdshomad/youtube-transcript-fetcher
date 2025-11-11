@@ -301,7 +301,7 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
                       <p className="text-red-400">{summaryError}</p>
                   )}
                   {summary && !isLoadingSummary && (
-                      <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap">
+                      <div className="prose prose-invert prose-sm max-w-none text-gray-200 whitespace-pre-wrap">
                         {summary.split('\n').map((line, i) => (
                             <p key={i} className="my-1 leading-relaxed">{line.replace(/^\s*-\s*/, '• ')}</p>
                         ))}
@@ -345,12 +345,12 @@ const TranscriptModal: React.FC<TranscriptModalProps> = ({ videoId, videoTitle, 
             <textarea
               value={editedTranscript}
               onChange={(e) => setEditedTranscript(e.target.value)}
-              className="w-full h-full bg-gray-900 text-gray-300 rounded-md p-2 outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              className="w-full h-full bg-gray-900 text-gray-200 rounded-md p-2 outline-none focus:ring-2 focus:ring-red-500 resize-none leading-relaxed"
               style={{ minHeight: '40vh' }}
               aria-label="Transcript editor"
             />
           ) : (
-              <div className="prose prose-invert max-w-none whitespace-pre-wrap text-gray-300">
+              <div className="max-w-none whitespace-pre-wrap text-gray-200 leading-relaxed">
                   {renderHighlightedTranscript()}
               </div>
           )}
