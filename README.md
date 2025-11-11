@@ -1,10 +1,10 @@
 # YouTube Playlist Transcript Fetcher
 
-An application that demonstrates the power of the Google Gemini API to **simulate interactions with external services**. This tool allows users to enter a YouTube playlist URL or a general topic, and it uses Gemini to **simulate fetching a playlist** and its videos. Users can then fetch an AI-generated transcript for any video in the list.
+An application that uses the official **YouTube Data API** to fetch real video playlists and the **Google Gemini API** to generate transcripts for them. Provide any public YouTube playlist URL or a topic, and the application will fetch the videos and allow you to generate, download, and edit a transcript for any video in the list.
 
 ## ✨ Features
 
-- **Simulated Playlist Generation**: Enter a YouTube playlist URL or any topic (e.g., "Beginner Python"), and the Gemini API will generate a realistic, plausible list of videos.
+- **Real Playlist Fetching**: Enter a YouTube playlist URL or any topic (e.g., "Beginner Python"), and the app will use the YouTube Data API to fetch the real list of videos.
 - **AI-Powered Transcripts**: Select any video from the generated playlist to get a plausible, AI-generated transcript.
 - **Responsive UI**: A clean, modern interface built with Tailwind CSS that works seamlessly on desktop and mobile devices.
 - **Interactive Modals**: Transcripts are displayed in an easy-to-read, accessible modal.
@@ -12,34 +12,35 @@ An application that demonstrates the power of the Google Gemini API to **simulat
 
 ## 🚀 How It Works
 
-This application is built entirely on the frontend and leverages the Google Gemini API for its core functionality.
+This application is built entirely on the frontend and leverages two key Google APIs:
 
 - **Frontend**: Built with **React** and **TypeScript** for a robust and type-safe user interface. Styling is handled by **Tailwind CSS**.
-- **AI Model**: It uses `gemini-2.5-flash` via the `@google/genai` SDK for its main tasks:
-    1.  **High-Fidelity Playlist Simulation**: When a user submits a playlist URL, a structured prompt is sent to Gemini asking it to return a JSON object that closely mimics the response structure of the official YouTube Data API. This provides a more realistic simulation of fetching playlist data. For topic-based searches, a simpler list is generated.
-    2.  **Transcript Generation**: When a user requests a transcript for a specific video, a second prompt is sent to Gemini, asking it to generate a realistic, paragraph-based transcript for a video with that title.
+- **APIs**:
+    1.  **YouTube Data API**: When a user submits a playlist URL or a topic, the application makes live calls to the YouTube Data API v3. It fetches the real playlist title and a list of up to 50 videos from that playlist. If a topic is provided, it searches for a relevant playlist first.
+    2.  **Google Gemini API**: When a user requests a transcript, `gemini-2.5-flash` is used to generate a realistic, paragraph-based transcript for a video with the given title.
 
 ## 🧑‍💻 Development (Live vs. Mock API)
 
-This project uses the live **Google Gemini API** (`services/geminiService.ts`) by default.
+This project uses the live **YouTube Data API** (`services/youtubeService.ts`) and the **Google Gemini API** (`services/geminiService.ts`). Both require a valid API key to be configured in the environment.
 
-For offline development or testing without an API key, a mock service is available at `services/mockApiService.ts`. To use it, simply swap the imports in `App.tsx`.
+A mock service is available at `services/mockApiService.ts` for **transcript generation only**. This allows for frontend development and testing of the transcript modal without consuming Gemini API credits. Playlist fetching will still require a live YouTube API key.
+To use the mock transcript service, swap the imports in `App.tsx`:
 
 ```tsx
 // In App.tsx
 
 // Comment out the live service:
-// import { generatePlaylistByTopic, fetchPlaylistByUrl, generateTranscript } from './services/geminiService';
+// import { generateTranscript } from './services/geminiService';
 
 // And uncomment the mock service:
-import { generatePlaylistData, generateTranscript } from './services/mockApiService';
+import { generateTranscript } from './services/mockApiService';
 ```
 
 ## Usage
 
 1.  Enter a YouTube playlist URL or a topic into the input field (e.g., "baking sourdough bread").
 2.  Click the **"Fetch Playlist"** button.
-3.  Wait for the AI-simulated playlist to be generated and displayed.
+3.  Wait for the playlist to be fetched and displayed.
 4.  Click the **"Get Transcript"** button on any video card.
 5.  A modal will appear, showing the AI-generated transcript for the selected video.
 6.  Click the '×' button, press the `Escape` key, or click outside the modal to close it.

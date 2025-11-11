@@ -4,16 +4,15 @@ import PlaylistForm from './components/PlaylistForm';
 import VideoGrid from './components/VideoGrid';
 import TranscriptModal from './components/TranscriptModal';
 import YouTubeIcon from './components/icons/YouTubeIcon';
-import { generatePlaylistByTopic, fetchPlaylistByUrl, generateTranscript } from './services/geminiService';
-// import { generatePlaylistData, generateTranscript } from './services/mockApiService';
+import { generateTranscript } from './services/geminiService';
+import { fetchYouTubePlaylist } from './services/youtubeService';
+// import { generateTranscript } from './services/mockApiService';
 import DownloadHistory from './components/DownloadHistory';
 import { toSrt, toVtt } from './utils/transcriptFormatters';
 import PlaylistHistoryMenu from './components/PlaylistHistoryMenu';
 
 
 declare var JSZip: any;
-
-const YOUTUBE_PLAYLIST_URL_REGEX = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)/;
 
 const App: React.FC = () => {
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -32,25 +31,18 @@ const App: React.FC = () => {
   const [selectedPlaylistTopic, setSelectedPlaylistTopic] = useState<string | null>(null);
   
   const handleFetchPlaylist = useCallback(async () => {
+    if (!playlistUrl.trim()) {
+        setError("Please enter a YouTube playlist URL or a topic.");
+        return;
+    }
     setIsLoadingPlaylist(true);
     setError(null);
     setVideos([]);
     
     try {
-      const input = playlistUrl.trim();
-      const isUrl = YOUTUBE_PLAYLIST_URL_REGEX.test(input);
-
-      if (isUrl) {
-          const { playlistTitle, videos } = await fetchPlaylistByUrl(input);
-          setVideos(videos);
-          setCurrentPlaylistTopic(playlistTitle);
-      } else {
-          // Treat as a topic
-          const topic = input || 'React development tutorials'; // Default topic
-          const fetchedVideos = await generatePlaylistByTopic(topic);
-          setVideos(fetchedVideos);
-          setCurrentPlaylistTopic(topic);
-      }
+      const { playlistTitle, videos } = await fetchYouTubePlaylist(playlistUrl.trim());
+      setVideos(videos);
+      setCurrentPlaylistTopic(playlistTitle);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -90,7 +82,6 @@ const App: React.FC = () => {
   
   const handleAddDownloadRecord = useCallback((record: Omit<DownloadRecord, 'id' | 'downloadedAt'>) => {
      setDownloadHistory(prev => {
-      // FIX: Corrected typo from `new new Date()` to `new Date()`.
       const newRecord: DownloadRecord = { ...record, id: Date.now().toString(), downloadedAt: new Date() };
       
       // Select the playlist of the newly downloaded item

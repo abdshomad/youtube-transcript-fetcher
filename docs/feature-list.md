@@ -4,10 +4,10 @@ A comprehensive list of all features implemented in the YouTube Playlist Transcr
 
 ---
 
-### FL001 - Simulated Playlist Generation from Topic or URL
+### FL001 - Real Playlist Fetching from Topic or URL
 - **Status**: Implemented
-- **Date**: 11 Nov 2025
-- **Description**: The application uses the Gemini API to simulate fetching a YouTube playlist. When a user provides a real YouTube playlist URL, the AI generates a response that mimics the structure of the official YouTube Data API. For topic-based searches, it generates a relevant, realistic-looking 8-video playlist. This demonstrates AI's ability to create high-fidelity mock API data.
+- **Date**: 12 Nov 2025
+- **Description**: The application integrates directly with the official YouTube Data API v3. It can fetch real video data from a public playlist URL. If a topic is provided instead of a URL, the application uses the YouTube API's search functionality to find a relevant playlist and then fetches its content.
 
 ### FL002 - AI-Powered Transcript Generation
 - **Status**: Implemented
